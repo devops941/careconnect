@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/database/mongodb";
 import { requireAuth } from "@/server/middleware/require-auth";
 import { handleApiError } from "@/server/errors/error-handler";
+import { ForbiddenError } from "@/server/errors/app-error";
 import { Doctor } from "@/models/Doctor";
 import { Department } from "@/models/Department";
 import { Appointment } from "@/models/Appointment";
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   try {
     const { identity } = await requireAuth();
     if (identity.role !== "SUPER_ADMIN" && identity.role !== "ADMIN") {
-      return handleApiError(new Error("Unauthorized: Super Admin or Admin access required"), 403);
+      return handleApiError(new ForbiddenError("Unauthorized: Super Admin or Admin access required"));
     }
 
     await connectToDatabase();

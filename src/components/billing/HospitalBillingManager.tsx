@@ -135,10 +135,16 @@ export function HospitalBillingManager() {
       setSubmitting(true);
       const doc = doctors.find((d) => d._id === selectedDoctorId);
 
-      const items = [
+      const items: Array<{
+        description: string;
+        category: "CONSULTATION" | "REGISTRATION" | "LAB" | "PHARMACY" | "PROCEDURE" | "OTHER";
+        unitPrice: number;
+        quantity: number;
+        total: number;
+      }> = [
         {
           description: `OPD Consultation - ${doc?.name || "Consultant"} (${doc?.specialization || "General"})`,
-          category: "CONSULTATION" as const,
+          category: "CONSULTATION",
           unitPrice: customFee,
           quantity: 1,
           total: customFee,
@@ -148,7 +154,7 @@ export function HospitalBillingManager() {
       if (includeRegFee) {
         items.push({
           description: "Hospital OPD Registration & Card Charges",
-          category: "REGISTRATION" as const,
+          category: "REGISTRATION",
           unitPrice: 100,
           quantity: 1,
           total: 100,

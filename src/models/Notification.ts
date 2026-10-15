@@ -5,7 +5,7 @@ export interface INotification extends Document {
   recipientType: "PATIENT" | "EMPLOYEE";
   title: string;
   message: string;
-  type: "APPOINTMENT" | "QUEUE" | "SCHEDULE" | "SYSTEM";
+  type: "APPOINTMENT" | "QUEUE" | "SCHEDULE" | "SYSTEM" | "BILLING";
   isRead: boolean;
   link?: string;
   createdAt: Date;
@@ -37,7 +37,7 @@ const NotificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ["APPOINTMENT", "QUEUE", "SCHEDULE", "SYSTEM"],
+      enum: ["APPOINTMENT", "QUEUE", "SCHEDULE", "SYSTEM", "BILLING"],
       default: "SYSTEM",
     },
     isRead: {

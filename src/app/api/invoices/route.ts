@@ -119,15 +119,14 @@ export async function POST(req: NextRequest) {
 
     // Notify Patient of bill generation
     await Notification.create({
-      recipientId: validated.patientId,
-      recipientRole: "PATIENT",
+      recipientEmail: validated.patientEmail || "patient@careconnect.local",
+      recipientType: "PATIENT",
       type: "BILLING",
       title: paymentStatus === "PAID" ? "Payment Receipt Generated" : "New Hospital Bill Issued",
       message:
         paymentStatus === "PAID"
           ? `Receipt #${invoiceNumber} for ₹${totalAmount} has been generated. Thank you for your payment.`
           : `Bill #${invoiceNumber} for ₹${totalAmount} has been issued. Balance due: ₹${balanceDue}.`,
-      data: { invoiceId: newInvoice._id, invoiceNumber, totalAmount, balanceDue },
     });
 
     return sendSuccess(newInvoice, 201);

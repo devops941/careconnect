@@ -5,6 +5,7 @@ import { Notification } from "@/models/Notification";
 import { connectToDatabase } from "@/server/database/mongodb";
 import { requireAuth } from "@/server/middleware/require-auth";
 import { handleApiError, sendSuccess } from "@/server/errors/error-handler";
+import { NotFoundError } from "@/server/errors/app-error";
 
 const settlePaymentSchema = z.object({
   paymentMethod: z.enum(["CASH", "UPI", "CARD", "NET_BANKING"]),
@@ -25,7 +26,7 @@ export async function POST(
     const invoice = await Invoice.findById(id);
 
     if (!invoice) {
-      return handleApiError(new Error("Invoice not found"), 404);
+      return handleApiError(new NotFoundError("Invoice not found"));
     }
 
     const body = await req.json();
@@ -52,12 +53,11 @@ export async function POST(
 
     // Create Notification
     await Notification.create({
-      recipientId: invoice.patientId,
-      recipientRole: "PATIENT",
+      recipientEmail: invoice.patientEmail || "patient@careconnect.local",
+      recipientType: "PATIENT",
       type: "BILLING",
       title: "Payment Received",
       message: `Payment of ₹${validated.amount} recorded for Invoice #${invoice.invoiceNumber}. Balance due: ₹${newBalanceDue}.`,
-      data: { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, amount: validated.amount },
     });
 
     return sendSuccess(invoice);
