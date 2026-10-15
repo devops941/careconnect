@@ -1,0 +1,51 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input, button, select, textarea {
+    font-family: inherit;
+  }
+}
+
+/* Custom utility classes aligned with design tokens */
+.bg-hospital-primary {
+  background-color: var(--color-primary);
+}
+.bg-hospital-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+.bg-hospital-primary-light {
+  background-color: var(--color-primary-light);
+}
+.text-hospital-primary {
+  color: var(--color-primary);
+}
+.border-hospital-primary {
+  border-color: var(--color-primary);
+}
+.bg-hospital-navy {
+  background-color: var(--color-deep-navy);
+}
+.text-hospital-navy {
+  color: var(--color-deep-navy);
+}
+.bg-hospital-surface {
+  background-color: var(--color-surface);
+}
+.text-hospital-main {
+  color: var(--color-text-main);
+}
+.text-hospital-secondary {
+  color: var(--color-text-secondary);
+}
+.border-hospital {
+  border-color: var(--color-border);
+}

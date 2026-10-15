@@ -1,0 +1,30 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Next.js Build Output
+/.next/
+/out/
+
+# Production Build
+/build
+
+# Debugging logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local Environment Variables
+.env*.local
+.env
+!.env.example
+
+# Vitest Coverage & Artifacts
+coverage/
+*.lcov
+
+# OS Files
+.DS_Store
+Thumbs.db
