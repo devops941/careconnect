@@ -29,8 +29,11 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const date = searchParams.get("date");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
     const doctorId = searchParams.get("doctorId");
     const status = searchParams.get("status");
+    const search = searchParams.get("search");
 
     const query: Record<string, any> = {};
 
@@ -41,8 +44,27 @@ export async function GET(req: NextRequest) {
       query.doctorId = doctorId;
     }
 
-    if (date) query.appointmentDate = date;
+    if (date) {
+      query.appointmentDate = date;
+    } else if (startDate && endDate) {
+      query.appointmentDate = { $gte: startDate, $lte: endDate };
+    } else if (startDate) {
+      query.appointmentDate = { $gte: startDate };
+    } else if (endDate) {
+      query.appointmentDate = { $lte: endDate };
+    }
+
     if (status) query.status = status;
+
+    if (search && search.trim()) {
+      const regex = new RegExp(search.trim(), "i");
+      query.$or = [
+        { patientName: regex },
+        { appointmentId: regex },
+        { doctorName: regex },
+        { departmentName: regex },
+      ];
+    }
 
     const appointments = await Appointment.find(query).sort({ appointmentDate: 1, timeSlot: 1 }).exec();
     return sendSuccess(appointments);
@@ -69,6 +91,9 @@ export async function POST(req: NextRequest) {
     const effectivePatientId =
       validated.patientId || (identity.role === "PATIENT" ? identity.id : identity.id);
 
+    // Patients raise appointment with PENDING status! Staff can directly confirm.
+    const initialStatus = identity.role === "PATIENT" ? "PENDING" : "CONFIRMED";
+
     const appointment = new Appointment({
       appointmentId,
       patientId: effectivePatientId,
@@ -82,20 +107,30 @@ export async function POST(req: NextRequest) {
       appointmentDate: validated.appointmentDate,
       timeSlot: validated.timeSlot,
       type: validated.type,
-      status: "CONFIRMED",
+      status: initialStatus,
       notes: validated.notes,
     });
 
     await appointment.save();
 
     // Create notification
-    await Notification.create({
-      recipientEmail: validated.patientEmail || identity.email,
-      recipientType: "PATIENT",
-      title: "Appointment Confirmed",
-      message: `Your consultation with ${doc?.name || "the specialist"} is confirmed for ${validated.appointmentDate} at ${validated.timeSlot}. ID: ${appointmentId}`,
-      type: "APPOINTMENT",
-    });
+    if (initialStatus === "PENDING") {
+      await Notification.create({
+        recipientEmail: validated.patientEmail || identity.email,
+        recipientType: "PATIENT",
+        title: "Appointment Request Submitted",
+        message: `Your appointment request with ${doc?.name || "the specialist"} for ${validated.appointmentDate} at ${validated.timeSlot} has been submitted (ID: ${appointmentId}). Awaiting hospital confirmation.`,
+        type: "APPOINTMENT",
+      });
+    } else {
+      await Notification.create({
+        recipientEmail: validated.patientEmail || identity.email,
+        recipientType: "PATIENT",
+        title: "Appointment Confirmed",
+        message: `Your consultation with ${doc?.name || "the specialist"} is confirmed for ${validated.appointmentDate} at ${validated.timeSlot}. ID: ${appointmentId}`,
+        type: "APPOINTMENT",
+      });
+    }
 
     return sendSuccess(appointment, 201);
   } catch (err) {

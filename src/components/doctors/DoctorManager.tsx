@@ -18,6 +18,7 @@ import {
   Building2,
   FileBadge,
   ArrowLeft,
+  CalendarCheck2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
@@ -49,7 +50,12 @@ interface DeptOption {
   opdRoomNo?: string;
 }
 
-export function DoctorManager() {
+interface DoctorManagerProps {
+  readOnly?: boolean;
+  onBookAppointment?: (doctorId: string) => void;
+}
+
+export function DoctorManager({ readOnly = false, onBookAppointment }: DoctorManagerProps = {}) {
   const [doctors, setDoctors] = useState<DoctorItem[]>([]);
   const [departments, setDepartments] = useState<DeptOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -506,9 +512,13 @@ export function DoctorManager() {
             <Stethoscope className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-[#16324F]">Doctor Management</h2>
+            <h2 className="text-lg font-bold text-[#16324F]">
+              {readOnly ? "Specialists & Doctors Directory" : "Doctor Management"}
+            </h2>
             <p className="text-xs text-[#64748B]">
-              Manage clinicians, specialization, room allocation, and staff login accounts
+              {readOnly
+                ? "Browse certified specialists, department clinics, and consultation fees"
+                : "Manage clinicians, specialization, room allocation, and staff login accounts"}
             </p>
           </div>
         </div>
@@ -540,14 +550,16 @@ export function DoctorManager() {
             />
           </div>
 
-          <Button
-            size="sm"
-            onClick={openCreatePage}
-            className="bg-[#0F766E] hover:bg-[#115E59] text-xs font-bold gap-1.5 shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Doctor</span>
-          </Button>
+          {!readOnly && (
+            <Button
+              size="sm"
+              onClick={openCreatePage}
+              className="bg-[#0F766E] hover:bg-[#115E59] text-xs font-bold gap-1.5 shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Doctor</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -560,15 +572,19 @@ export function DoctorManager() {
             <Stethoscope className="w-10 h-10 text-slate-300 mx-auto" />
             <h3 className="text-sm font-bold text-[#16324F]">No Doctors Found</h3>
             <p className="text-xs text-[#64748B] max-w-sm mx-auto">
-              Click &quot;Add Doctor&quot; to onboard your hospital specialists and provision their login credentials.
+              {readOnly
+                ? "No specialists match your search criteria. Please select a different department."
+                : "Click \"Add Doctor\" to onboard your hospital specialists and provision their login credentials."}
             </p>
-            <Button
-              size="sm"
-              onClick={openCreatePage}
-              className="bg-[#0F766E] hover:bg-[#115E59] text-xs font-bold"
-            >
-              Add First Doctor
-            </Button>
+            {!readOnly && (
+              <Button
+                size="sm"
+                onClick={openCreatePage}
+                className="bg-[#0F766E] hover:bg-[#115E59] text-xs font-bold"
+              >
+                Add First Doctor
+              </Button>
+            )}
           </div>
         ) : (
           <table className="w-full text-left text-xs">
@@ -582,7 +598,7 @@ export function DoctorManager() {
                 <th className="py-3 px-4">OPD Room</th>
                 <th className="py-3 px-4">Fee (₹)</th>
                 <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-4 text-right">{readOnly ? "Consultation" : "Actions"}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F5F9]">
@@ -618,13 +634,24 @@ export function DoctorManager() {
                     />
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <button
-                      onClick={() => openEditPage(doc)}
-                      className="p-1.5 rounded-lg text-[#64748B] hover:text-[#0F766E] hover:bg-teal-50 transition-colors"
-                      title="Edit Doctor Details"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
+                    {readOnly ? (
+                      <Button
+                        size="sm"
+                        onClick={() => onBookAppointment?.(doc._id)}
+                        className="h-7 text-[11px] px-2.5 bg-[#0F766E] hover:bg-[#115E59] font-bold gap-1 shadow-2xs"
+                      >
+                        <CalendarCheck2 className="w-3.5 h-3.5" />
+                        <span>Book Visit</span>
+                      </Button>
+                    ) : (
+                      <button
+                        onClick={() => openEditPage(doc)}
+                        className="p-1.5 rounded-lg text-[#64748B] hover:text-[#0F766E] hover:bg-teal-50 transition-colors"
+                        title="Edit Doctor Details"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

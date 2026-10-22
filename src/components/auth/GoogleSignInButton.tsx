@@ -50,12 +50,11 @@ export function GoogleSignInButton({ label = "Continue with Google", onSuccess }
           throw new Error(data.error?.message || "Google authentication failed.");
         }
 
-        toast.success("Signed in with Google successfully!");
+        toast.success("Signed in with Google successfully! Entering portal...");
         if (onSuccess) {
           onSuccess();
         } else {
-          router.push("/patient/dashboard");
-          router.refresh();
+          window.location.href = "/patient/dashboard";
         }
       } catch (err: any) {
         toast.error(err.message || "Could not sign in with Google.");

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Stethoscope,
@@ -19,12 +19,14 @@ import {
   Calendar,
   Star,
   Database,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DashboardLayout, NavItem } from "@/components/layout/DashboardLayout";
 import { LiveQueueBoard } from "@/components/queue/LiveQueueBoard";
 import { DoctorConsultationDesk } from "@/components/doctor/DoctorConsultationDesk";
 import { AppointmentManager } from "@/components/appointments/AppointmentManager";
+import { AdminPatientManager } from "@/components/patient/AdminPatientManager";
 import { DepartmentManager } from "@/components/departments/DepartmentManager";
 import { StaffDoctorManager } from "@/components/staff/StaffDoctorManager";
 import { ReceptionistDesk } from "@/components/reception/ReceptionistDesk";
@@ -78,7 +80,57 @@ export function StaffDashboardClient({
     : isReceptionist
     ? "reception"
     : "overview";
-  const [activeSection, setActiveSection] = useState<string>(defaultSection);
+
+  const [activeSection, setActiveSection] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get("tab") || params.get("section");
+      if (urlTab) return urlTab;
+      const saved = localStorage.getItem(`careconnect_staff_tab_${user.id}`);
+      if (saved) return saved;
+    }
+    return defaultSection;
+  });
+
+  const handleSelectSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(`careconnect_staff_tab_${user.id}`, sectionId);
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", sectionId);
+        window.history.replaceState(null, "", url.toString());
+      } catch (err) {
+        console.error("Failed to update tab URL/localStorage", err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get("tab") || params.get("section");
+      const savedTab = urlTab || localStorage.getItem(`careconnect_staff_tab_${user.id}`);
+      if (savedTab) {
+        setActiveSection(savedTab);
+        const url = new URL(window.location.href);
+        if (url.searchParams.get("tab") !== savedTab) {
+          url.searchParams.set("tab", savedTab);
+          window.history.replaceState(null, "", url.toString());
+        }
+      }
+
+      const handlePopState = () => {
+        const currentParams = new URLSearchParams(window.location.search);
+        const popTab = currentParams.get("tab") || currentParams.get("section");
+        if (popTab) {
+          setActiveSection(popTab);
+        }
+      };
+      window.addEventListener("popstate", handlePopState);
+      return () => window.removeEventListener("popstate", handlePopState);
+    }
+  }, [user.id]);
 
   // Role-tailored sidebar navigation items
   const staffNavItems: NavItem[] = [
@@ -92,16 +144,16 @@ export function StaffDashboardClient({
             badge: "Desk",
           },
           {
-            id: "queue",
-            title: "Live Queue & TV Display",
-            icon: Clock,
-            badge: "Live",
-          },
-          {
             id: "appointments",
             title: "Appointments Desk",
             icon: CalendarCheck2,
           },
+          // {
+          //   id: "queue",
+          //   title: "Live Queue & TV Display",
+          //   icon: Clock,
+          //   badge: "Live",
+          // },
           {
             id: "schedules",
             title: "My Roster & Leaves",
@@ -130,15 +182,20 @@ export function StaffDashboardClient({
             badge: "Hub",
           },
           {
-            id: "queue",
-            title: "Live Queue & TV Display",
-            icon: Clock,
-            badge: "Live",
-          },
-          {
             id: "appointments",
             title: "Appointments Desk",
             icon: CalendarCheck2,
+          },
+          // {
+          //   id: "queue",
+          //   title: "Live Queue & TV Display",
+          //   icon: Clock,
+          //   badge: "Live",
+          // },
+          {
+            id: "patients",
+            title: "Patient Management",
+            icon: UserCheck,
           },
           {
             id: "billing",
@@ -172,17 +229,33 @@ export function StaffDashboardClient({
             icon: LayoutDashboard,
           },
           {
-            id: "queue",
-            title: "Live Queue & TV Display",
-            icon: Clock,
-            badge: "Live",
-          },
-          {
             id: "appointments",
             title: "Appointments Desk",
             icon: CalendarCheck2,
           },
+          // {
+          //   id: "queue",
+          //   title: "Live Queue & TV Display",
+          //   icon: Clock,
+          //   badge: "Live",
+          // },
           {
+            id: "patients",
+            title: "Patient Management",
+            icon: UserCheck,
+          },
+         
+          {
+            id: "staff_doctors",
+            title: "Staff & Doctor Management",
+            icon: Users,
+          },
+          {
+            id: "departments",
+            title: "Department Management",
+            icon: Building2,
+          },
+           {
             id: "billing",
             title: "Billing & Cashier",
             icon: CreditCard,
@@ -191,16 +264,6 @@ export function StaffDashboardClient({
             id: "schedules",
             title: "Shifts & Leave Approvals",
             icon: Calendar,
-          },
-          {
-            id: "departments",
-            title: "Department Management",
-            icon: Building2,
-          },
-          {
-            id: "staff_doctors",
-            title: "Staff & Doctor Management",
-            icon: Users,
           },
           {
             id: "feedback",
@@ -215,15 +278,15 @@ export function StaffDashboardClient({
           ...(user.role === "SUPER_ADMIN"
             ? [
                 {
-                  id: "maintenance",
-                  title: "Backup & Maintenance",
-                  icon: Database,
-                  superAdminOnly: true,
-                },
-                {
                   id: "settings",
                   title: "Hospital Profile & Config",
                   icon: Building2,
+                  superAdminOnly: true,
+                },
+                {
+                  id: "maintenance",
+                  title: "Backup & Maintenance",
+                  icon: Database,
                   superAdminOnly: true,
                 },
               ]
@@ -239,7 +302,7 @@ export function StaffDashboardClient({
       emergencyPhone={hospitalSettings.emergencyPhone}
       emergency24x7={hospitalSettings.emergency24x7}
       activeSection={activeSection}
-      onSelectSection={setActiveSection}
+      onSelectSection={handleSelectSection}
       customNavItems={staffNavItems}
     >
       <div className="space-y-6">
@@ -266,7 +329,7 @@ export function StaffDashboardClient({
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button
-                  onClick={() => setActiveSection("queue")}
+                  onClick={() => handleSelectSection("queue")}
                   className="bg-[#0F766E] hover:bg-[#115E59] text-xs font-bold gap-2 shadow-sm"
                 >
                   <Ticket className="w-4 h-4" />
@@ -275,7 +338,7 @@ export function StaffDashboardClient({
 
                 {isAdmin && (
                   <Button
-                    onClick={() => setActiveSection("settings")}
+                    onClick={() => handleSelectSection("settings")}
                     variant="outline"
                     className="bg-transparent border-white/20 text-white hover:bg-white/10 text-xs font-bold gap-2"
                   >
@@ -289,7 +352,7 @@ export function StaffDashboardClient({
             {/* Quick Access Operational Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div
-                onClick={() => setActiveSection("queue")}
+                onClick={() => handleSelectSection("queue")}
                 className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs hover:border-[#0F766E] cursor-pointer transition-all space-y-2"
               >
                 <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
@@ -303,7 +366,7 @@ export function StaffDashboardClient({
               </div>
 
               <div
-                onClick={() => setActiveSection("appointments")}
+                onClick={() => handleSelectSection("appointments")}
                 className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs hover:border-[#0F766E] cursor-pointer transition-all space-y-2"
               >
                 <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -319,7 +382,7 @@ export function StaffDashboardClient({
               {isAdmin && (
                 <>
                   <div
-                    onClick={() => setActiveSection("departments")}
+                    onClick={() => handleSelectSection("departments")}
                     className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs hover:border-[#0F766E] cursor-pointer transition-all space-y-2"
                   >
                     <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
@@ -333,7 +396,7 @@ export function StaffDashboardClient({
                   </div>
 
                   <div
-                    onClick={() => setActiveSection("staff_doctors")}
+                    onClick={() => handleSelectSection("staff_doctors")}
                     className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs hover:border-[#0F766E] cursor-pointer transition-all space-y-2"
                   >
                     <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
@@ -358,7 +421,7 @@ export function StaffDashboardClient({
         {/* 2. RECEPTIONIST FRONT DESK OPERATIONS                                     */}
         {/* ========================================================================= */}
         {activeSection === "reception" && isReceptionist && (
-          <ReceptionistDesk onNavigateSection={setActiveSection} />
+          <ReceptionistDesk onNavigateSection={handleSelectSection} />
         )}
 
         {/* ========================================================================= */}
@@ -386,6 +449,11 @@ export function StaffDashboardClient({
         {/* 5. APPOINTMENTS MANAGER                                                   */}
         {/* ========================================================================= */}
         {activeSection === "appointments" && <AppointmentManager currentUser={user} />}
+
+        {/* ========================================================================= */}
+        {/* 5A. PATIENT REGISTRY & MANAGEMENT                                         */}
+        {/* ========================================================================= */}
+        {activeSection === "patients" && <AdminPatientManager />}
 
         {/* ========================================================================= */}
         {/* 5B. HOSPITAL BILLING & CASHIER DESK                                       */}

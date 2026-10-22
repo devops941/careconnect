@@ -63,8 +63,7 @@ const InvoiceSchema = new Schema<IInvoice>(
       index: true,
     },
     patientId: {
-      type: Schema.Types.ObjectId,
-      ref: "Patient",
+      type: Schema.Types.Mixed,
       required: true,
       index: true,
     },

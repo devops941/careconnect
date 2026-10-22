@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import { Prescription } from "@/models/Prescription";
 import { QueueToken } from "@/models/QueueToken";
 import { Appointment } from "@/models/Appointment";
+import { Invoice } from "@/models/Invoice";
+import { Doctor } from "@/models/Doctor";
 import { connectToDatabase } from "@/server/database/mongodb";
 import { requireAuth } from "@/server/middleware/require-auth";
 import { requireRole } from "@/server/middleware/require-role";
@@ -114,6 +116,91 @@ export async function POST(req: NextRequest) {
       await Appointment.findByIdAndUpdate(validated.appointmentId, {
         status: "COMPLETED",
       });
+    }
+
+    // Ensure invoice exists for this completed consultation
+    try {
+      const matchCriteria: any[] = [];
+      if (validated.appointmentId && mongoose.isValidObjectId(validated.appointmentId)) {
+        matchCriteria.push({ appointmentId: new mongoose.Types.ObjectId(validated.appointmentId) });
+      }
+      if (validated.tokenNumber) {
+        matchCriteria.push({ queueTokenNumber: validated.tokenNumber });
+      }
+
+      const existingInvoice = matchCriteria.length > 0 ? await Invoice.findOne({ $or: matchCriteria }).exec() : null;
+
+      if (!existingInvoice) {
+        // Fetch doctor consultation fee
+        let fee = 500;
+        if (doctorId && mongoose.isValidObjectId(doctorId)) {
+          const doc = await Doctor.findById(doctorId).lean().exec();
+          if (doc?.consultationFee) fee = doc.consultationFee;
+        }
+
+        const count = await Invoice.countDocuments();
+        const year = new Date().getFullYear();
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        const invoiceNumber = `INV-${year}-${(count + 1).toString().padStart(4, "0")}-${randomSuffix}`;
+
+        const items: any[] = [
+          {
+            description: `OPD Consultation & Prescription - ${doctorName} (${departmentName})`,
+            category: "CONSULTATION",
+            unitPrice: fee,
+            quantity: 1,
+            total: fee,
+          },
+          {
+            description: "Hospital OPD Clinical Charting & Queue Processing",
+            category: "REGISTRATION",
+            unitPrice: 100,
+            quantity: 1,
+            total: 100,
+          },
+        ];
+
+        // Add any lab investigations ordered by doctor
+        if (validated.labInvestigations && validated.labInvestigations.length > 0) {
+          validated.labInvestigations.forEach((lab) => {
+            items.push({
+              description: `Diagnostic Investigation: ${lab}`,
+              category: "LAB",
+              unitPrice: 250,
+              quantity: 1,
+              total: 250,
+            });
+          });
+        }
+
+        const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+
+        await Invoice.create({
+          invoiceNumber,
+          patientId: validated.patientId,
+          patientName: validated.patientName,
+          doctorId: mongoose.isValidObjectId(doctorId) ? new mongoose.Types.ObjectId(doctorId) : undefined,
+          doctorName,
+          departmentName,
+          appointmentId: validated.appointmentId && mongoose.isValidObjectId(validated.appointmentId)
+            ? new mongoose.Types.ObjectId(validated.appointmentId)
+            : undefined,
+          queueTokenNumber: validated.tokenNumber,
+          items,
+          subtotal: totalAmount,
+          discount: 0,
+          tax: 0,
+          totalAmount,
+          paidAmount: 0,
+          balanceDue: totalAmount,
+          paymentStatus: "PENDING",
+          paymentMethod: "UNPAID",
+          cashierName: "Front Desk Cashier",
+          issuedAt: new Date(),
+        });
+      }
+    } catch (invErr) {
+      console.error("Auto-invoice generation error on prescription save:", invErr);
     }
 
     return sendSuccess(prescription, 201);

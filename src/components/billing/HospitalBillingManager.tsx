@@ -1,4 +1,4 @@
-"use client";
+  "use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -18,7 +18,9 @@ import {
   Stethoscope,
   ChevronRight,
   Filter,
+  RotateCw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { InvoiceReceiptModal, InvoiceData } from "./InvoiceReceiptModal";
@@ -44,6 +46,8 @@ export function HospitalBillingManager() {
   const [settlingInvoice, setSettlingInvoice] = useState<InvoiceData | null>(null);
 
   // New Bill Form State
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
@@ -59,16 +63,18 @@ export function HospitalBillingManager() {
   const [settlingAmount, setSettlingAmount] = useState<number>(0);
   const [isSettling, setIsSettling] = useState(false);
 
-  // Load Invoices & Doctors
+  // Load Invoices, Doctors & Appointments
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [invRes, docRes] = await Promise.all([
+      const [invRes, docRes, aptRes] = await Promise.all([
         fetch("/api/invoices"),
         fetch("/api/doctors"),
+        fetch("/api/appointments"),
       ]);
       const invData = await invRes.json();
       const docData = await docRes.json();
+      const aptData = await aptRes.json();
 
       if (invData.success) {
         setInvoices(invData.data);
@@ -80,6 +86,9 @@ export function HospitalBillingManager() {
           setCustomFee(docData.data[0].consultationFee || 500);
         }
       }
+      if (aptData.success && Array.isArray(aptData.data)) {
+        setAppointments(aptData.data);
+      }
     } catch (err) {
       console.error("Failed to load billing records:", err);
     } finally {
@@ -90,6 +99,27 @@ export function HospitalBillingManager() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleSelectAppointment = (aptId: string) => {
+    setSelectedAppointmentId(aptId);
+    if (!aptId) {
+      setPatientName("");
+      setPatientPhone("");
+      return;
+    }
+    const apt = appointments.find((a) => a._id === aptId || a.appointmentId === aptId);
+    if (apt) {
+      setPatientName(apt.patientName || "");
+      setPatientPhone(apt.patientPhone || "");
+      if (apt.doctorId) {
+        const doc = doctors.find((d) => d._id === String(apt.doctorId) || d.name === apt.doctorName);
+        if (doc) {
+          setSelectedDoctorId(doc._id);
+          setCustomFee(doc.consultationFee || 500);
+        }
+      }
+    }
+  };
 
   // When selected doctor changes, update fee
   const handleDoctorChange = (docId: string) => {
@@ -163,14 +193,19 @@ export function HospitalBillingManager() {
 
       const total = items.reduce((s, i) => s + i.total, 0);
       const isPaid = paymentMode !== "UNPAID";
+      const selectedApt = appointments.find(
+        (a) => a._id === selectedAppointmentId || a.appointmentId === selectedAppointmentId
+      );
 
       const payload = {
-        patientId: "641004f1c08cf000d15fd715", // Default or walk-in patient ID
+        patientId: selectedApt?.patientId ? String(selectedApt.patientId) : "walk-in-patient",
         patientName: patientName.trim(),
         patientPhone: patientPhone.trim() || undefined,
         doctorId: doc?._id,
         doctorName: doc?.name,
         departmentName: doc?.departmentName || doc?.specialization,
+        appointmentId: selectedApt?._id ? String(selectedApt._id) : undefined,
+        queueTokenNumber: selectedApt?.tokenNumber || undefined,
         items,
         paidAmount: isPaid ? total : 0,
         paymentMethod: paymentMode,
@@ -185,15 +220,19 @@ export function HospitalBillingManager() {
 
       const data = await res.json();
       if (data.success) {
+        toast.success("Bill & tax invoice generated successfully!");
         setInvoices([data.data, ...invoices]);
         setIsCreatingBill(false);
         setPatientName("");
         setPatientPhone("");
         setUtrNumber("");
         setSelectedReceipt(data.data); // Automatically preview receipt!
+      } else {
+        toast.error(data.error?.message || "Failed to generate bill");
       }
     } catch (err) {
       console.error("Failed to generate bill:", err);
+      toast.error("Network error generating bill");
     } finally {
       setSubmitting(false);
     }
@@ -218,12 +257,16 @@ export function HospitalBillingManager() {
 
       const data = await res.json();
       if (data.success) {
+        toast.success(`Payment of ₹${settlingAmount} collected & receipt issued!`);
         setInvoices(invoices.map((inv) => (inv._id === data.data._id ? data.data : inv)));
         setSettlingInvoice(null);
         setSelectedReceipt(data.data); // Open updated receipt
+      } else {
+        toast.error(data.error?.message || "Failed to settle payment");
       }
     } catch (err) {
       console.error("Settlement error:", err);
+      toast.error("Network error recording payment");
     } finally {
       setIsSettling(false);
     }
@@ -243,13 +286,25 @@ export function HospitalBillingManager() {
           </p>
         </div>
 
-        <Button
-          onClick={() => setIsCreatingBill(true)}
-          className="gap-2 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold text-xs shadow-sm self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Bill / Receipt</span>
-        </Button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            onClick={fetchData}
+            disabled={loading}
+            className="gap-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border-slate-200 cursor-pointer"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span>Refresh Ledger</span>
+          </Button>
+
+          <Button
+            onClick={() => setIsCreatingBill(true)}
+            className="gap-2 bg-[#0F766E] hover:bg-[#115E59] text-white font-bold text-xs shadow-sm cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Bill / Receipt</span>
+          </Button>
+        </div>
       </div>
 
       {/* 2. Financial KPI Metric Cards */}
@@ -517,6 +572,26 @@ export function HospitalBillingManager() {
             </div>
 
             <form onSubmit={handleCreateBill} className="space-y-4 text-xs">
+              {appointments.length > 0 && (
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Link with Appointment / Attending Patient (Optional)
+                  </label>
+                  <select
+                    value={selectedAppointmentId}
+                    onChange={(e) => handleSelectAppointment(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20"
+                  >
+                    <option value="">-- Manual / Walk-in Patient --</option>
+                    {appointments.map((a) => (
+                      <option key={a._id} value={a._id}>
+                        {a.patientName} • {a.appointmentId} {a.tokenNumber ? `(Token #${a.tokenNumber})` : ""} — {a.doctorName} [{a.status}]
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Patient Full Name *</label>
                 <Input

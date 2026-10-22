@@ -42,11 +42,6 @@ export function AuthCard({ title, description, children, footer }: AuthCardProps
 
         {footer && <div className="mt-6 pt-5 border-t border-[#F1F5F9]">{footer}</div>}
       </div>
-
-      {/* Security notice footer */}
-      <div className="mt-6 text-center text-xs text-[#94A3B8]">
-        <p>🔒 HIPAA & ISO 27001 Security Compliant Data Encryption</p>
-      </div>
     </div>
   );
 }

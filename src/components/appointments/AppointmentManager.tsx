@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CalendarCheck2, Plus, CheckCircle2, Ticket, XCircle, Search, Loader2, ArrowLeft } from "lucide-react";
+import { CalendarCheck2, Plus, CheckCircle2, Ticket, XCircle, Search, Loader2, ArrowLeft, Clock, Calendar, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -55,7 +55,7 @@ interface AppointmentManagerProps {
 }
 
 export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
-  const isPatientUser = currentUser?.role === "PATIENT";
+  const isPatientUser = currentUser?.role?.toUpperCase() === "PATIENT";
 
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
@@ -64,6 +64,12 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  // Backend Date Filtration States
+  const [dateFilter, setDateFilter] = useState<string>("");
+  const [startDateFilter, setStartDateFilter] = useState<string>("");
+  const [endDateFilter, setEndDateFilter] = useState<string>("");
+  const [datePreset, setDatePreset] = useState<"ALL" | "TODAY" | "TOMORROW" | "THIS_WEEK" | "CUSTOM">("ALL");
 
   const [isBookingMode, setIsBookingMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,12 +91,105 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
   const [timeSlot, setTimeSlot] = useState("09:00 AM - 10:00 AM");
   const [type, setType] = useState<"IN_PERSON" | "FOLLOW_UP">("IN_PERSON");
   const [notes, setNotes] = useState("");
+  // Reschedule Modal State
+  const [rescheduleApt, setRescheduleApt] = useState<AppointmentItem | null>(null);
+  const [newDate, setNewDate] = useState("");
+  const [newSlot, setNewSlot] = useState("09:00 AM - 10:00 AM");
+  const [isRescheduling, setIsRescheduling] = useState(false);
 
-  const loadData = async () => {
+  // Backend Filter Fetcher
+  const fetchAppointmentsOnly = async (
+    targetDate: string,
+    targetStartDate: string,
+    targetEndDate: string,
+    targetStatus: string
+  ) => {
     try {
       setIsLoading(true);
+      const params = new URLSearchParams();
+      if (targetDate) {
+        params.set("date", targetDate);
+      } else if (targetStartDate && targetEndDate) {
+        params.set("startDate", targetStartDate);
+        params.set("endDate", targetEndDate);
+      }
+      if (targetStatus) {
+        params.set("status", targetStatus);
+      }
+
+      const aptUrl = params.toString() ? `/api/appointments?${params.toString()}` : "/api/appointments";
+      const res = await fetch(aptUrl);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAppointments(data.data || []);
+      }
+    } catch {
+      console.error("Failed to filter appointments");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePresetChange = (preset: "ALL" | "TODAY" | "TOMORROW" | "THIS_WEEK" | "CUSTOM") => {
+    setDatePreset(preset);
+    let targetDate = "";
+    let targetStart = "";
+    let targetEnd = "";
+
+    if (preset === "TODAY") {
+      targetDate = new Date().toISOString().split("T")[0];
+    } else if (preset === "TOMORROW") {
+      const tom = new Date(Date.now() + 86400000);
+      targetDate = tom.toISOString().split("T")[0];
+    } else if (preset === "THIS_WEEK") {
+      targetStart = new Date().toISOString().split("T")[0];
+      const end = new Date(Date.now() + 7 * 86400000);
+      targetEnd = end.toISOString().split("T")[0];
+    }
+
+    setDateFilter(targetDate);
+    setStartDateFilter(targetStart);
+    setEndDateFilter(targetEnd);
+
+    fetchAppointmentsOnly(targetDate, targetStart, targetEnd, statusFilter);
+  };
+
+  const handleCustomDateChange = (val: string) => {
+    setDatePreset(val ? "CUSTOM" : "ALL");
+    setDateFilter(val);
+    setStartDateFilter("");
+    setEndDateFilter("");
+    fetchAppointmentsOnly(val, "", "", statusFilter);
+  };
+
+  const handleStatusChange = (val: string) => {
+    setStatusFilter(val);
+    fetchAppointmentsOnly(dateFilter, startDateFilter, endDateFilter, val);
+  };
+
+  const loadData = async (
+    targetDate = dateFilter,
+    targetStartDate = startDateFilter,
+    targetEndDate = endDateFilter,
+    targetStatus = statusFilter
+  ) => {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams();
+      if (targetDate) {
+        params.set("date", targetDate);
+      } else if (targetStartDate && targetEndDate) {
+        params.set("startDate", targetStartDate);
+        params.set("endDate", targetEndDate);
+      }
+      if (targetStatus) {
+        params.set("status", targetStatus);
+      }
+
+      const aptUrl = params.toString() ? `/api/appointments?${params.toString()}` : "/api/appointments";
+
       const [aptRes, docRes, deptRes, patRes] = await Promise.all([
-        fetch("/api/appointments"),
+        fetch(aptUrl),
         fetch("/api/doctors"),
         fetch("/api/departments"),
         fetch("/api/patients"),
@@ -186,7 +285,11 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
         throw new Error(data.error?.message || "Failed to book appointment");
       }
 
-      toast.success(`Appointment confirmed! ID: ${data.data.appointmentId}`);
+      if (data.data?.status === "PENDING") {
+        toast.success(`Appointment request submitted! ID: ${data.data.appointmentId}. Awaiting hospital confirmation.`);
+      } else {
+        toast.success(`Appointment confirmed! ID: ${data.data.appointmentId}`);
+      }
       setIsBookingMode(false);
       setPatientName("");
       setPatientPhone("");
@@ -196,6 +299,62 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
       setFormError(err.message || "Error booking appointment");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Hospital Confirm Appointment Action
+  const handleConfirmAppointment = async (aptId: string) => {
+    try {
+      const res = await fetch(`/api/appointments/${aptId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CONFIRMED" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error?.message || "Failed to confirm appointment");
+      }
+      toast.success("Appointment Confirmed! Patient notified.");
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to confirm appointment");
+    }
+  };
+
+  const handleOpenReschedule = (apt: AppointmentItem) => {
+    setRescheduleApt(apt);
+    setNewDate(apt.appointmentDate);
+    setNewSlot(apt.timeSlot);
+  };
+
+  const handleSaveReschedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rescheduleApt || !newDate) return;
+
+    try {
+      setIsRescheduling(true);
+      const res = await fetch(`/api/appointments/${rescheduleApt._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentDate: newDate,
+          timeSlot: newSlot,
+          status: "CONFIRMED", // Confirmed with new timing
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error?.message || "Failed to update timing");
+      }
+
+      toast.success(`Appointment rescheduled to ${newDate} at ${newSlot} & Confirmed!`);
+      setRescheduleApt(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reschedule appointment");
+    } finally {
+      setIsRescheduling(false);
     }
   };
 
@@ -309,7 +468,7 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
                     Select Registered Patient (Auto-fills Info)
                   </label>
                   <span className="text-[11px] text-[#0F766E] font-medium">
-                    Or select &quot;✍️ Enter New / Manual Patient&quot; below
+                    Or select &quot;Enter New / Manual Patient&quot; below
                   </span>
                 </div>
                 <select
@@ -318,7 +477,7 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
                   className="w-full h-10 px-3.5 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-xs text-[#1F2937] font-semibold focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E]"
                 >
                   <option value="">-- Choose Registered Patient ({registeredPatients.length} on file) --</option>
-                  <option value="MANUAL">✍️ Enter New / Manual Patient (Walk-in)</option>
+                  <option value="MANUAL">+ Enter New / Manual Patient (Walk-in)</option>
                   {registeredPatients.map((p) => (
                     <option key={p._id} value={p._id}>
                       {p.name} {p.phone ? `• ${p.phone}` : ""} {p.email ? `• ${p.email}` : ""}
@@ -459,7 +618,7 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
               className="bg-[#0F766E] hover:bg-[#115E59] text-xs font-bold gap-2 px-6"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Confirm Appointment Booking</span>
+              <span>{isPatientUser ? "Submit Appointment Request" : "Confirm Appointment Booking"}</span>
             </Button>
           </div>
         </form>
@@ -480,19 +639,61 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Backend Date Filtration */}
+          <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-1">
+            <div className="flex items-center gap-1 pl-2 pr-1 text-[#0F766E]">
+              <Calendar className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-bold uppercase tracking-wider hidden md:inline">Date:</span>
+            </div>
+
+            <select
+              value={datePreset}
+              onChange={(e) => handlePresetChange(e.target.value as any)}
+              className="h-8 px-2 text-xs bg-white border border-[#CBD5E1] rounded-lg font-semibold text-[#16324F] focus:outline-none focus:border-[#0F766E]"
+            >
+              <option value="ALL">All Dates</option>
+              <option value="TODAY">Today</option>
+              <option value="TOMORROW">Tomorrow</option>
+              <option value="THIS_WEEK">Next 7 Days</option>
+              <option value="CUSTOM">Specific Date</option>
+            </select>
+
+            {/* Date Input */}
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => handleCustomDateChange(e.target.value)}
+              className="h-8 px-2 text-xs bg-white border border-[#CBD5E1] rounded-lg font-semibold text-[#16324F] focus:outline-none focus:border-[#0F766E]"
+            />
+
+            {(dateFilter || startDateFilter) && (
+              <button
+                type="button"
+                onClick={() => handlePresetChange("ALL")}
+                className="p-1 rounded-md text-[#64748B] hover:text-red-600 hover:bg-red-50 transition-colors"
+                title="Clear Date Filter"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter */}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 px-3 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#0F766E]"
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="h-10 px-3 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl font-medium text-[#16324F] focus:outline-none focus:border-[#0F766E]"
           >
             <option value="">All Statuses</option>
+            <option value="PENDING">Pending Approval</option>
             <option value="CONFIRMED">Confirmed</option>
             <option value="CHECKED_IN">Checked In</option>
             <option value="COMPLETED">Completed</option>
             <option value="CANCELLED">Cancelled</option>
           </select>
 
+          {/* Search */}
           <div className="relative">
             <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-3" />
             <input
@@ -500,13 +701,13 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
               placeholder="Search appointments..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-10 pl-9 pr-3 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#0F766E]"
+              className="h-10 pl-9 pr-3 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#0F766E]"
             />
           </div>
 
           <Button size="sm" onClick={() => setIsBookingMode(true)} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" />
-            <span>Book Appointment</span>
+            <span>{isPatientUser ? "Book Consultation" : "Book Appointment"}</span>
           </Button>
         </div>
       </div>
@@ -521,7 +722,7 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
         ) : filtered.length === 0 ? (
           <div className="py-8 text-center text-xs text-[#64748B] space-y-1">
             <p>No appointments found.</p>
-            <p className="text-[11px] text-[#94A3B8]">Click "Book Appointment" to schedule your first consultation.</p>
+            <p className="text-[11px] text-[#94A3B8]">Click "Book Appointment" to schedule your consultation.</p>
           </div>
         ) : (
           <table className="w-full text-left text-xs">
@@ -558,28 +759,90 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
                     )}
                   </td>
                   <td className="py-3 px-4">
-                    <StatusBadge status={apt.status} />
+                    <StatusBadge status={apt.status} labelMap={{ PENDING: "Pending Approval" }} />
                   </td>
-                  <td className="py-3 px-4 text-right space-x-1">
-                    {apt.status === "CONFIRMED" && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleCheckIn(apt)}
-                        className="h-7 text-[11px] px-2.5 bg-[#0F766E] gap-1"
-                      >
-                        <Ticket className="w-3.5 h-3.5" />
-                        <span>Check In</span>
-                      </Button>
-                    )}
-                    {apt.status !== "CANCELLED" && apt.status !== "COMPLETED" && (
-                      <button
-                        type="button"
-                        onClick={() => handleCancel(apt._id)}
-                        className="p-1 rounded text-[#94A3B8] hover:text-[#B91C1C] transition-colors"
-                        title="Cancel Appointment"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
+                  <td className="py-3 px-4 text-right whitespace-nowrap">
+                    {/* Patient View: ONLY Cancel button */}
+                    {isPatientUser ? (
+                      apt.status !== "CANCELLED" && apt.status !== "COMPLETED" ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCancel(apt._id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
+                          title="Cancel Appointment"
+                        >
+                          <XCircle className="w-3.5 h-3.5 text-red-500" />
+                          <span>Cancel</span>
+                        </button>
+                      ) : (
+                        <span className="text-[#94A3B8] text-xs">—</span>
+                      )
+                    ) : (
+                      /* Hospital Staff Controls */
+                      <div className="inline-flex items-center justify-end gap-1.5">
+                        {/* If PENDING */}
+                        {apt.status === "PENDING" && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleConfirmAppointment(apt._id)}
+                              className="h-7 text-[11px] px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white gap-1 font-bold shadow-2xs"
+                              title="Confirm Patient Appointment"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Confirm</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenReschedule(apt)}
+                              className="h-7 text-[11px] px-2.5 text-blue-700 border-blue-200 hover:bg-blue-50 gap-1 font-semibold"
+                              title="Change Appointment Timing / Slot"
+                            >
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>Change Slot</span>
+                            </Button>
+                          </>
+                        )}
+
+                        {/* If CONFIRMED */}
+                        {apt.status === "CONFIRMED" && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleCheckIn(apt)}
+                              className="h-7 text-[11px] px-2.5 bg-[#0F766E] hover:bg-[#0D655E] gap-1 font-bold shadow-2xs"
+                              title="Generate live queue token"
+                            >
+                              <Ticket className="w-3.5 h-3.5" />
+                              <span>Check In</span>
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenReschedule(apt)}
+                              className="h-7 text-[11px] px-2 text-[#16324F] border-[#CBD5E1] hover:bg-slate-50 gap-1 font-medium"
+                              title="Reschedule / Change Slot"
+                            >
+                              <Clock className="w-3.5 h-3.5 text-[#64748B]" />
+                              <span>Change Slot</span>
+                            </Button>
+                          </>
+                        )}
+
+                        {/* Staff Cancel option */}
+                        {apt.status !== "CANCELLED" && apt.status !== "COMPLETED" && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancel(apt._id)}
+                            className="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#B91C1C] hover:bg-red-50 transition-colors align-middle cursor-pointer"
+                            title="Cancel Appointment"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -588,6 +851,95 @@ export function AppointmentManager({ currentUser }: AppointmentManagerProps) {
           </table>
         )}
       </div>
+
+      {/* Reschedule / Change Timing Modal */}
+      {rescheduleApt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xl max-w-md w-full p-6 space-y-5 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-[#16324F]">Change Appointment Timing</h3>
+                <p className="text-xs text-[#64748B]">
+                  Reschedule for {rescheduleApt.patientName} ({rescheduleApt.appointmentId})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRescheduleApt(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveReschedule} className="space-y-4">
+              <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] space-y-1 text-xs">
+                <div>
+                  <span className="text-[#64748B]">Doctor: </span>
+                  <span className="font-bold text-[#16324F]">{rescheduleApt.doctorName}</span>
+                </div>
+                <div>
+                  <span className="text-[#64748B]">Department: </span>
+                  <span className="font-semibold text-[#16324F]">{rescheduleApt.departmentName}</span>
+                </div>
+                <div>
+                  <span className="text-[#64748B]">Current Slot: </span>
+                  <span className="font-medium text-slate-700">{rescheduleApt.appointmentDate} at {rescheduleApt.timeSlot}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="block text-xs font-bold text-[#1F2937]">New Appointment Date</label>
+                <input
+                  type="date"
+                  value={newDate}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="w-full h-10 px-3 bg-white border border-[#CBD5E1] rounded-xl text-xs font-semibold text-[#1F2937] focus:outline-none focus:border-[#0F766E]"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="block text-xs font-bold text-[#1F2937]">New Time Slot</label>
+                <select
+                  value={newSlot}
+                  onChange={(e) => setNewSlot(e.target.value)}
+                  className="w-full h-10 px-3 bg-white border border-[#CBD5E1] rounded-xl text-xs font-semibold text-[#1F2937] focus:outline-none focus:border-[#0F766E]"
+                >
+                  <option value="09:00 AM - 10:00 AM">09:00 AM - 10:00 AM</option>
+                  <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                  <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                  <option value="12:00 PM - 01:00 PM">12:00 PM - 01:00 PM</option>
+                  <option value="02:00 PM - 03:00 PM">02:00 PM - 03:00 PM</option>
+                  <option value="03:00 PM - 04:00 PM">03:00 PM - 04:00 PM</option>
+                  <option value="04:00 PM - 05:00 PM">04:00 PM - 05:00 PM</option>
+                  <option value="05:00 PM - 06:00 PM">05:00 PM - 06:00 PM</option>
+                </select>
+              </div>
+
+              <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-end gap-2.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRescheduleApt(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  isLoading={isRescheduling}
+                  className="bg-[#0F766E] hover:bg-[#0D655E] font-bold text-xs"
+                >
+                  Confirm & Save Timing
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

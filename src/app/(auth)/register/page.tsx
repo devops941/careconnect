@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { Metadata } from "next";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { AuthCard } from "@/components/auth/AuthCard";
@@ -15,7 +16,9 @@ export default function RegisterPage() {
         title="Create Patient Account"
         description="Register for digital appointments, clinic queue notifications, and secure health check-ins."
       >
-        <RegisterForm />
+        <Suspense fallback={<div className="py-8 text-center text-sm text-[#64748B]">Loading registration form...</div>}>
+          <RegisterForm />
+        </Suspense>
       </AuthCard>
     </AuthLayout>
   );

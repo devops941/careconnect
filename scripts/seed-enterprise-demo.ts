@@ -12,8 +12,9 @@ import { Invoice } from "../src/models/Invoice";
 import { DoctorSchedule } from "../src/models/DoctorSchedule";
 import { Feedback } from "../src/models/Feedback";
 import { Prescription } from "../src/models/Prescription";
+import { passwordService } from "../src/server/services/password.service";
 
-async function seed() {
+export async function seedEnterpriseDemo(options = { disconnect: true }) {
   console.log("=====================================================================");
   console.log("  🏥 CareConnect Enterprise - 10 Records Live Data Population Runner  ");
   console.log("=====================================================================\n");
@@ -216,18 +217,19 @@ async function seed() {
     // 3. REGISTERED PATIENTS (10 Patients)
     // =========================================================================
     console.log("3. Seeding 10 Registered Patients...");
+    const demoPasswordHash = await passwordService.hashPassword("Password123!");
     await Patient.deleteMany({});
     const patientsData = [
-      { name: "Arunachalam Murugesan", email: "arunachalam@example.com", normalizedEmail: "arunachalam@example.com", phone: "+91 98765 43210", bloodGroup: "O+", gender: "MALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Lakshmi Priya", email: "lakshmi.priya@example.com", normalizedEmail: "lakshmi.priya@example.com", phone: "+91 98765 43211", bloodGroup: "B+", gender: "FEMALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Karthik Subramanian", email: "karthik.s@example.com", normalizedEmail: "karthik.s@example.com", phone: "+91 98765 43212", bloodGroup: "A+", gender: "MALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Deepa Narayanan", email: "deepa.n@example.com", normalizedEmail: "deepa.n@example.com", phone: "+91 98765 43213", bloodGroup: "AB+", gender: "FEMALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Suresh Balaji", email: "suresh.balaji@example.com", normalizedEmail: "suresh.balaji@example.com", phone: "+91 98765 43214", bloodGroup: "O-", gender: "MALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Meenakshi Sundaram", email: "meenakshi.s@example.com", normalizedEmail: "meenakshi.s@example.com", phone: "+91 98765 43215", bloodGroup: "A-", gender: "FEMALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Venkatesh Raman", email: "venkatesh.r@example.com", normalizedEmail: "venkatesh.r@example.com", phone: "+91 98765 43216", bloodGroup: "B-", gender: "MALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Geetha Krishnan", email: "geetha.k@example.com", normalizedEmail: "geetha.k@example.com", phone: "+91 98765 43217", bloodGroup: "O+", gender: "FEMALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Dinesh Kumar", email: "dinesh.kumar@example.com", normalizedEmail: "dinesh.kumar@example.com", phone: "+91 98765 43218", bloodGroup: "AB-", gender: "MALE", status: "ACTIVE", authProviders: ["credentials"] },
-      { name: "Radha Padmanabhan", email: "radha.p@example.com", normalizedEmail: "radha.p@example.com", phone: "+91 98765 43219", bloodGroup: "A+", gender: "FEMALE", status: "ACTIVE", authProviders: ["credentials"] },
+      { name: "Arunachalam Murugesan", email: "arunachalam@example.com", normalizedEmail: "arunachalam@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43210", bloodGroup: "O+", gender: "MALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Lakshmi Priya", email: "lakshmi.priya@example.com", normalizedEmail: "lakshmi.priya@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43211", bloodGroup: "B+", gender: "FEMALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Karthik Subramanian", email: "karthik.s@example.com", normalizedEmail: "karthik.s@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43212", bloodGroup: "A+", gender: "MALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Deepa Narayanan", email: "deepa.n@example.com", normalizedEmail: "deepa.n@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43213", bloodGroup: "AB+", gender: "FEMALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Suresh Balaji", email: "suresh.balaji@example.com", normalizedEmail: "suresh.balaji@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43214", bloodGroup: "O-", gender: "MALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Meenakshi Sundaram", email: "meenakshi.s@example.com", normalizedEmail: "meenakshi.s@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43215", bloodGroup: "A-", gender: "FEMALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Venkatesh Raman", email: "venkatesh.r@example.com", normalizedEmail: "venkatesh.r@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43216", bloodGroup: "B-", gender: "MALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Geetha Krishnan", email: "geetha.k@example.com", normalizedEmail: "geetha.k@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43217", bloodGroup: "O+", gender: "FEMALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Dinesh Kumar", email: "dinesh.kumar@example.com", normalizedEmail: "dinesh.kumar@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43218", bloodGroup: "AB-", gender: "MALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
+      { name: "Radha Padmanabhan", email: "radha.p@example.com", normalizedEmail: "radha.p@example.com", passwordHash: demoPasswordHash, emailVerifiedAt: new Date(), phone: "+91 98765 43219", bloodGroup: "A+", gender: "FEMALE" as const, status: "ACTIVE" as const, authProviders: ["credentials" as const] },
     ];
     const patients = await Patient.insertMany(patientsData);
     console.log(`   ✓ Inserted ${patients.length} registered patients.\n`);
@@ -754,9 +756,13 @@ async function seed() {
     console.error("❌ Seeding failed with error:", error);
     process.exitCode = 1;
   } finally {
-    await disconnectDatabase();
-    console.log("Database connection closed.");
+    if (options.disconnect) {
+      await disconnectDatabase();
+      console.log("Database connection closed.");
+    }
   }
 }
 
-seed();
+if (process.argv[1]?.includes("seed-enterprise-demo")) {
+  seedEnterpriseDemo();
+}

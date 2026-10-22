@@ -57,26 +57,46 @@ export function DoctorConsultationDesk({
   const [selectedToken, setSelectedToken] = useState<ActiveQueueToken | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Digital Rx Form State
+  // Digital Rx Form State (Blank by default - no auto-filled mock values)
   const [diagnosis, setDiagnosis] = useState("");
   const [clinicalNotes, setClinicalNotes] = useState("");
-  const [bp, setBp] = useState("120/80");
-  const [pulse, setPulse] = useState("72 bpm");
-  const [temp, setTemp] = useState("98.6 °F");
-  const [weight, setWeight] = useState("68 kg");
+  const [bp, setBp] = useState("");
+  const [pulse, setPulse] = useState("");
+  const [temp, setTemp] = useState("");
+  const [weight, setWeight] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
   const [labTests, setLabTests] = useState("");
   const [medications, setMedications] = useState<MedicationEntry[]>([
     {
-      medicineName: "Paracetamol 650mg",
-      dosage: "1 Tab",
+      medicineName: "",
+      dosage: "",
       frequency: "1-0-1",
-      duration: "3 Days",
-      instructions: "After meals",
+      duration: "",
+      instructions: "",
     },
   ]);
   const [savingRx, setSavingRx] = useState(false);
   const [prescriptionSlip, setPrescriptionSlip] = useState<any | null>(null);
+
+  const resetForm = () => {
+    setDiagnosis("");
+    setClinicalNotes("");
+    setBp("");
+    setPulse("");
+    setTemp("");
+    setWeight("");
+    setFollowUpDate("");
+    setLabTests("");
+    setMedications([
+      {
+        medicineName: "",
+        dosage: "",
+        frequency: "1-0-1",
+        duration: "",
+        instructions: "",
+      },
+    ]);
+  };
 
   const fetchDoctorTokens = async () => {
     try {
@@ -173,8 +193,7 @@ export function DoctorConsultationDesk({
       toast.success("Consultation Completed & Digital Rx Dispatched!");
       setPrescriptionSlip(data.data);
       // Reset form
-      setDiagnosis("");
-      setClinicalNotes("");
+      resetForm();
       setSelectedToken(null);
       fetchDoctorTokens();
     } catch {
@@ -183,6 +202,11 @@ export function DoctorConsultationDesk({
       setSavingRx(false);
     }
   };
+
+  const displayDoctorName =
+    doctorName.startsWith("Dr.") || doctorName.startsWith("Dr ")
+      ? doctorName
+      : `Dr. ${doctorName}`;
 
   return (
     <div className="space-y-6">
@@ -193,7 +217,7 @@ export function DoctorConsultationDesk({
             <Stethoscope className="w-3.5 h-3.5" />
             <span>Clinical Consultation Desk</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black">Dr. {doctorName}</h2>
+          <h2 className="text-xl sm:text-2xl font-black">{displayDoctorName}</h2>
           <p className="text-xs text-slate-300">
             {departmentName} • CareConnect Healthcare Digital Pad
           </p>
@@ -228,7 +252,10 @@ export function DoctorConsultationDesk({
                 return (
                   <div
                     key={token._id}
-                    onClick={() => setSelectedToken(token)}
+                    onClick={() => {
+                      setSelectedToken(token);
+                      resetForm();
+                    }}
                     className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                       isSelected
                         ? "bg-[#CCFBF1]/30 border-[#0F766E] shadow-xs"
@@ -304,28 +331,28 @@ export function DoctorConsultationDesk({
                   <Input
                     id="vital-bp"
                     label="Blood Pressure"
-                    placeholder="120/80 mmHg"
+                    placeholder="e.g. 120/80 mmHg"
                     value={bp}
                     onChange={(e) => setBp(e.target.value)}
                   />
                   <Input
                     id="vital-pulse"
                     label="Pulse Rate"
-                    placeholder="72 bpm"
+                    placeholder="e.g. 72 bpm"
                     value={pulse}
                     onChange={(e) => setPulse(e.target.value)}
                   />
                   <Input
                     id="vital-temp"
                     label="Temperature"
-                    placeholder="98.6 °F"
+                    placeholder="e.g. 98.6 °F"
                     value={temp}
                     onChange={(e) => setTemp(e.target.value)}
                   />
                   <Input
                     id="vital-weight"
                     label="Body Weight"
-                    placeholder="68 kg"
+                    placeholder="e.g. 68 kg"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                   />
@@ -345,7 +372,7 @@ export function DoctorConsultationDesk({
                 <Input
                   id="clinical-notes"
                   label="Chief Complaints / Doctor Notes"
-                  placeholder="Patient reports persistent dry cough for 3 days"
+                  placeholder="e.g. Patient reports persistent dry cough for 3 days"
                   value={clinicalNotes}
                   onChange={(e) => setClinicalNotes(e.target.value)}
                 />

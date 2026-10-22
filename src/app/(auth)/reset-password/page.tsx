@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { CheckCircle2, Lock } from "lucide-react";
+import { CheckCircle2, Lock, AlertTriangle } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/Button";
@@ -87,8 +87,9 @@ function ResetPasswordForm() {
         <input type="hidden" {...register("token")} value={tokenFromUrl} />
 
         {!tokenFromUrl && (
-          <div className="p-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-lg text-xs text-[#B45309]">
-            ⚠️ Missing reset token in URL. Please use the exact link sent to your email.
+          <div className="p-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-lg text-xs text-[#B45309] flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-[#B45309]" />
+            <span>Missing reset token in URL. Please use the exact link sent to your email.</span>
           </div>
         )}
 

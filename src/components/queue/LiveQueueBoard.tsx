@@ -18,6 +18,7 @@ import {
   Stethoscope,
   X,
   ArrowLeft,
+  Bell,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
@@ -305,8 +306,18 @@ export function LiveQueueBoard({ userRole = "ADMIN", currentDoctorId }: LiveQueu
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <span className="text-xs uppercase font-extrabold tracking-wider text-slate-400">
-                          {token.status === "CALLED" ? "🔔 Calling Now" : "🩺 In Progress"}
+                        <span className="text-xs uppercase font-extrabold tracking-wider text-slate-400 flex items-center gap-1.5">
+                          {token.status === "CALLED" ? (
+                            <>
+                              <Bell className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Calling Now</span>
+                            </>
+                          ) : (
+                            <>
+                              <Stethoscope className="w-3.5 h-3.5 text-teal-400" />
+                              <span>In Progress</span>
+                            </>
+                          )}
                         </span>
                         <div className="text-5xl sm:text-6xl font-black font-mono tracking-tight text-white mt-1">
                           {token.tokenNumber}
@@ -511,7 +522,10 @@ export function LiveQueueBoard({ userRole = "ADMIN", currentDoctorId }: LiveQueu
                         : "bg-white text-[#64748B] border-[#E2E8F0]"
                     }`}
                   >
-                    🚨 Emergency / High Priority
+                    <span className="flex items-center justify-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                      <span>Emergency / High Priority</span>
+                    </span>
                   </button>
                 </div>
               </div>

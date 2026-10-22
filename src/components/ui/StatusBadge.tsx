@@ -4,6 +4,7 @@ export type StatusType =
   | "ACTIVE"
   | "INACTIVE"
   | "ON_LEAVE"
+  | "PENDING"
   | "SCHEDULED"
   | "CONFIRMED"
   | "CHECKED_IN"
@@ -27,6 +28,7 @@ export function StatusBadge({ status, className = "", labelMap }: StatusBadgePro
 
   const styles: Record<string, string> = {
     ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    PENDING: "bg-amber-50 text-amber-800 border-amber-300 font-bold",
     CONFIRMED: "bg-teal-50 text-teal-700 border-teal-200",
     COMPLETED: "bg-green-50 text-green-700 border-green-200",
     CHECKED_IN: "bg-blue-50 text-blue-700 border-blue-200",

@@ -14,6 +14,7 @@ export interface IAppointment extends Document {
   timeSlot: string;
   type: "IN_PERSON" | "FOLLOW_UP" | "EMERGENCY";
   status:
+    | "PENDING"
     | "SCHEDULED"
     | "CONFIRMED"
     | "CHECKED_IN"
@@ -96,6 +97,7 @@ const AppointmentSchema = new Schema<IAppointment>(
     status: {
       type: String,
       enum: [
+        "PENDING",
         "SCHEDULED",
         "CONFIRMED",
         "CHECKED_IN",
@@ -104,7 +106,7 @@ const AppointmentSchema = new Schema<IAppointment>(
         "CANCELLED",
         "NO_SHOW",
       ],
-      default: "CONFIRMED",
+      default: "PENDING",
       index: true,
     },
     tokenNumber: {

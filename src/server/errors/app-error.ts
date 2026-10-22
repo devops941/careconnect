@@ -62,3 +62,9 @@ export class RateLimitError extends AppError {
     super(message, 429, "RATE_LIMIT_EXCEEDED");
   }
 }
+
+export class AccountNotFoundError extends AppError {
+  constructor(message = "No registered account found with this email. Please register first.") {
+    super(message, 404, "ACCOUNT_NOT_FOUND");
+  }
+}

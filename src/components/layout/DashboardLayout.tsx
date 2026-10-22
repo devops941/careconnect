@@ -17,7 +17,6 @@ import {
   Menu,
   X,
   PhoneCall,
-  Bell,
   Stethoscope,
   BarChart3,
   Ticket,
@@ -82,41 +81,6 @@ export function DashboardLayout({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   // Profile & Preferences Modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  // Notification popover state
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: "1",
-      title: "Appointment Confirmed",
-      message: "Dr. Sarah Jenkins confirmed consultation for Cardiology OPD.",
-      time: "5m ago",
-      type: "appointment",
-      unread: true,
-    },
-    {
-      id: "2",
-      title: "Queue Turn Alert",
-      message: "Token A-014 called to Consultation Room 201.",
-      time: "12m ago",
-      type: "queue",
-      unread: true,
-    },
-    {
-      id: "3",
-      title: "Clinician On-Duty Update",
-      message: "Dr. Ramesh Kumar marked Active in Room 204.",
-      time: "30m ago",
-      type: "doctor",
-      unread: false,
-    },
-  ]);
-
-  const unreadCount = notifications.filter((n) => n.unread).length;
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-    toast.success("All notifications marked as read");
-  };
 
   const handleLogout = async () => {
     try {
@@ -146,7 +110,7 @@ export function DashboardLayout({
         ...(user.role === "DOCTOR"
           ? [{ id: "consultation", title: "Consultation & Rx Pad", icon: Stethoscope }]
           : []),
-        { id: "queue", title: "Live Queue & TV", icon: Clock, badge: "Live" },
+        // { id: "queue", title: "Live Queue & TV", icon: Clock, badge: "Live" },
         { id: "appointments", title: "Appointments Desk", icon: CalendarCheck2 },
         ...(user.role === "ADMIN" || user.role === "SUPER_ADMIN"
           ? [
@@ -398,7 +362,7 @@ export function DashboardLayout({
                 </div>
                 <div className="overflow-hidden leading-tight flex-1">
                   <span className="block text-xs font-bold text-white truncate group-hover:text-[#CCFBF1]">{user.name}</span>
-                  <span className="block text-[10px] text-[#94A3B8] truncate">{user.role} • Profile ⚙️</span>
+                  <span className="block text-[10px] text-[#94A3B8] truncate">{user.role} • Profile</span>
                 </div>
               </div>
               <Button
@@ -444,106 +408,37 @@ export function DashboardLayout({
             </h1>
           </div>
 
-          {/* Right: Notifications & User Profile */}
-          <div className="flex items-center gap-3">
-            {/* Notifications Bell */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 rounded-xl text-[#64748B] hover:text-[#16324F] hover:bg-[#F1F5F9] transition-colors relative"
-                title="Notifications & Alerts"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-[#0F766E] text-white text-[9px] font-bold flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Notifications Popover */}
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-[#E2E8F0] p-4 z-50 text-xs text-[#16324F] space-y-3">
-                  <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-xs text-[#16324F]">Hospital Alerts & Notifications</span>
-                      {unreadCount > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-teal-50 text-[#0F766E] font-bold text-[10px]">
-                          {unreadCount} New
-                        </span>
-                      )}
-                    </div>
-                    {unreadCount > 0 && (
-                      <button
-                        type="button"
-                        onClick={markAllRead}
-                        className="text-[11px] font-bold text-[#0F766E] hover:underline"
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                    {notifications.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`p-3 rounded-xl border transition-colors ${
-                          item.unread
-                            ? "bg-teal-50/50 border-teal-200/80"
-                            : "bg-[#F8FAFC] border-[#E2E8F0]"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-[11px] text-[#16324F]">{item.title}</span>
-                          <span className="text-[10px] text-[#94A3B8]">{item.time}</span>
-                        </div>
-                        <p className="text-[11px] text-[#64748B] mt-1 leading-snug">{item.message}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-1 text-center border-t border-[#F1F5F9]">
-                    <span className="text-[10px] text-[#94A3B8]">
-                      Real-time Push & In-app System Alerts Active
-                    </span>
-                  </div>
-                </div>
-              )}
+          {/* Right: User Profile */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#16324F] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+              {user.name.charAt(0)}
             </div>
-
-            {/* Clean Minimal User Profile */}
-            <div className="flex items-center gap-2.5 pl-2.5 border-l border-[#E2E8F0]">
-              <div className="w-8 h-8 rounded-full bg-[#16324F] text-white flex items-center justify-center text-xs font-bold shadow-xs">
-                {user.name.charAt(0)}
-              </div>
-              <div className="hidden sm:block leading-tight text-left">
-                <span className="block text-xs font-bold text-[#16324F] truncate max-w-[130px]">
-                  {user.name}
-                </span>
-                <span className="block text-[10px] text-[#64748B] font-medium">
-                  {user.role}
-                </span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#B91C1C] hover:bg-[#FEF2F2] transition-colors ml-1"
-                title="Sign Out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
+            <div className="hidden sm:block leading-tight text-left">
+              <span className="block text-xs font-bold text-[#16324F] truncate max-w-[130px]">
+                {user.name}
+              </span>
+              <span className="block text-[10px] text-[#64748B] font-medium">
+                {user.role}
+              </span>
             </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#B91C1C] hover:bg-[#FEF2F2] transition-colors ml-1"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
           {children}
         </main>
 
         {/* Global Footer */}
         <footer className="bg-white border-t border-[#E2E8F0] py-4 text-center text-xs text-[#94A3B8]">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
             <span>
               © {new Date().getFullYear()} <strong>{hospitalName}</strong> • Digital Hospital & Queue Suite
             </span>

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Mail, User, ShieldCheck, Stethoscope, Lock, KeyRound } from "lucide-react";
+import { Mail, User, ShieldCheck, Stethoscope, Lock, KeyRound, CheckCircle2, UserPlus, Loader2 } from "lucide-react";
 import { loginSchema, LoginInput } from "@/features/auth/schemas/auth.schema";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
@@ -16,8 +16,13 @@ import { FormError } from "./FormError";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formError, setFormError] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [portalType, setPortalType] = useState<"patient" | "staff">("patient");
+
+  const registeredSuccess = searchParams.get("registered") === "true";
+  const initialEmail = searchParams.get("email") || "";
 
   const {
     register,
@@ -27,11 +32,17 @@ export function LoginForm() {
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      email: initialEmail,
       password: "",
       rememberMe: false,
     },
   });
+
+  useEffect(() => {
+    if (initialEmail) {
+      setValue("email", initialEmail, { shouldValidate: true });
+    }
+  }, [initialEmail, setValue]);
 
   const onSubmit = async (values: LoginInput) => {
     try {
@@ -45,17 +56,25 @@ export function LoginForm() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (data.error?.code === "ACCOUNT_NOT_FOUND") {
+          setIsRedirecting(true);
+          toast.error("User Not Found! Redirecting to Create Account page...");
+          setFormError("User Not Found: No registered account found with this email. Redirecting to Create Account...");
+          setTimeout(() => {
+            router.push(`/register?email=${encodeURIComponent(values.email)}`);
+          }, 1200);
+          return;
+        }
+
         setFormError(data.error?.message || "Invalid credentials. Please verify and try again.");
         return;
       }
 
       toast.success("Welcome back! Signing you in...");
-      if (portalType === "patient" || data.data?.user?.role === "PATIENT") {
-        router.push("/patient/dashboard");
-      } else {
-        router.push("/staff/dashboard");
-      }
-      router.refresh();
+      const target = portalType === "patient" || data.data?.user?.role === "PATIENT"
+        ? "/patient/dashboard"
+        : "/staff/dashboard";
+      window.location.href = target;
     } catch {
       setFormError("Unable to reach the server. Please verify your connection.");
     }
@@ -103,6 +122,26 @@ export function LoginForm() {
           <span>Hospital Staff</span>
         </button>
       </div>
+
+      {registeredSuccess && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-xs text-emerald-800 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">Account created successfully!</p>
+            <p className="text-emerald-700 mt-0.5">You can now sign in with your email and password.</p>
+          </div>
+        </div>
+      )}
+
+      {isRedirecting && (
+        <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2.5 text-xs text-red-800 animate-in fade-in">
+          <Loader2 className="w-4 h-4 text-red-600 animate-spin shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">User Not Found</p>
+            <p className="text-red-700 mt-0.5">No registered account exists with this email. Redirecting to Create Account page...</p>
+          </div>
+        </div>
+      )}
 
       <FormError message={formError} />
 
@@ -195,32 +234,18 @@ export function LoginForm() {
         <div className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#475569]">
             <KeyRound className="w-3.5 h-3.5 text-[#0F766E]" />
-            <span>Demo Staff Accounts (Click to Auto-fill):</span>
+            <span>Super Admin Account (Click to Auto-fill):</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1">
             <button
               type="button"
-              onClick={() => handleQuickFill("admin@careconnect.health", "Admin@12345")}
-              className="text-[11px] font-medium py-1.5 px-2 bg-white hover:bg-slate-100 rounded-lg border border-[#CBD5E1] text-[#1E293B] transition-colors truncate"
-              title="Super Admin: admin@careconnect.health"
+              onClick={() => handleQuickFill("admin@gmail.com", "Admin@123")}
+              className="text-xs font-medium py-2 px-3 bg-white hover:bg-slate-100 rounded-lg border border-[#CBD5E1] text-[#1E293B] transition-colors flex items-center justify-center gap-2"
+              title="Super Admin: admin@gmail.com"
             >
-              👑 Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFill("doctor.chen@careconnect.health", "Doctor@12345")}
-              className="text-[11px] font-medium py-1.5 px-2 bg-white hover:bg-slate-100 rounded-lg border border-[#CBD5E1] text-[#1E293B] transition-colors truncate"
-              title="Doctor: doctor.chen@careconnect.health"
-            >
-              🩺 Doctor
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFill("receptionist@careconnect.health", "Recept@12345")}
-              className="text-[11px] font-medium py-1.5 px-2 bg-white hover:bg-slate-100 rounded-lg border border-[#CBD5E1] text-[#1E293B] transition-colors truncate"
-              title="Receptionist: receptionist@careconnect.health"
-            >
-              📋 Receptionist
+              <ShieldCheck className="w-3.5 h-3.5 text-[#0F766E]" />
+              <span>Super Admin</span>
+              <span className="text-slate-400 font-normal text-[11px]">(admin@gmail.com)</span>
             </button>
           </div>
         </div>

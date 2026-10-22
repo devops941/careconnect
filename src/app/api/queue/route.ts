@@ -30,6 +30,10 @@ export async function GET(req: NextRequest) {
     const query: Record<string, any> = { tokenDate: date };
     if (doctorId) query.doctorId = doctorId;
     if (status) query.status = status;
+    const patientId = searchParams.get("patientId");
+    if (patientId) {
+      query.$or = [{ patientId }, { patientName: new RegExp(patientId, "i") }];
+    }
 
     const tokens = await QueueToken.find(query).sort({ priority: -1, tokenSequence: 1 }).exec();
     return sendSuccess(tokens);
@@ -60,13 +64,22 @@ export async function POST(req: NextRequest) {
     const doc = await Doctor.findById(validated.doctorId);
     const dept = await Department.findById(validated.departmentId);
 
+    // Resolve patient ID from appointment if not provided
+    let effectivePatientId = validated.patientId;
+    if (!effectivePatientId && validated.appointmentId) {
+      const linkedApt = await Appointment.findById(validated.appointmentId);
+      if (linkedApt?.patientId) {
+        effectivePatientId = String(linkedApt.patientId);
+      }
+    }
+
     const token = new QueueToken({
       tokenNumber,
       tokenSequence: nextSeq,
       tokenDate: today,
       patientName: validated.patientName,
       patientPhone: validated.patientPhone,
-      patientId: validated.patientId,
+      patientId: effectivePatientId,
       doctorId: validated.doctorId,
       doctorName: doc?.name || "Attending Physician",
       departmentId: validated.departmentId,

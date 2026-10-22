@@ -766,16 +766,32 @@ export function StaffDoctorManager({ readOnly = false }: StaffDoctorManagerProps
           </div>
         </div>
 
-        {!readOnly && (
-          <Button
-            size="sm"
-            onClick={openCreatePage}
-            className="bg-[#0F766E] hover:bg-[#115E59] text-xs font-bold gap-2 shadow-sm shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Staff / Doctor</span>
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          {/* Role Filter Dropdown beside Add Staff Button */}
+          <div className="flex items-center gap-2">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value as any)}
+              className="h-9 px-3 text-xs bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl font-bold text-[#16324F] focus:outline-none focus:border-[#0F766E] shadow-2xs cursor-pointer"
+            >
+              <option value="ALL">All Personnel ({staffList.length})</option>
+              <option value="DOCTOR">Doctors ({totalDoctors})</option>
+              <option value="RECEPTIONIST">Receptionists ({totalReceptionists})</option>
+              <option value="ADMIN">Admins ({totalAdmins})</option>
+            </select>
+          </div>
+
+          {!readOnly && (
+            <Button
+              size="sm"
+              onClick={openCreatePage}
+              className="bg-[#0F766E] hover:bg-[#115E59] text-xs font-bold gap-2 shadow-sm shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Staff / Doctor</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* KPI Counters Strip */}
@@ -798,57 +814,10 @@ export function StaffDoctorManager({ readOnly = false }: StaffDoctorManagerProps
         </div>
       </div>
 
-      {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
-        {/* Role Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
-          <button
-            type="button"
-            onClick={() => setRoleFilter("ALL")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              roleFilter === "ALL"
-                ? "bg-white text-[#16324F] shadow-xs"
-                : "text-[#64748B] hover:text-[#16324F]"
-            }`}
-          >
-            All Personnel ({staffList.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setRoleFilter("DOCTOR")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              roleFilter === "DOCTOR"
-                ? "bg-white text-blue-700 shadow-xs"
-                : "text-[#64748B] hover:text-[#16324F]"
-            }`}
-          >
-            <Stethoscope className="w-3.5 h-3.5" />
-            <span>Doctors ({totalDoctors})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setRoleFilter("RECEPTIONIST")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              roleFilter === "RECEPTIONIST"
-                ? "bg-white text-amber-700 shadow-xs"
-                : "text-[#64748B] hover:text-[#16324F]"
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>Receptionists ({totalReceptionists})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setRoleFilter("ADMIN")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              roleFilter === "ADMIN"
-                ? "bg-white text-purple-700 shadow-xs"
-                : "text-[#64748B] hover:text-[#16324F]"
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>Admins ({totalAdmins})</span>
-          </button>
+      {/* Directory Search & Count Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div className="text-xs font-semibold text-[#64748B]">
+          Showing <span className="font-bold text-[#16324F]">{filtered.length}</span> of {staffList.length} members
         </div>
 
         {/* Search Input */}
@@ -859,7 +828,7 @@ export function StaffDoctorManager({ readOnly = false }: StaffDoctorManagerProps
             placeholder="Search by name, ID, department..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 pl-9 pr-3 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#0F766E] w-full md:w-72 font-medium"
+            className="h-10 pl-9 pr-3 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#0F766E] w-full sm:w-80 font-medium"
           />
         </div>
       </div>

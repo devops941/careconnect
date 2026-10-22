@@ -1,252 +1,293 @@
-# 🏥 CareConnect Health Systems — Enterprise Clinical Suite & Digital Queue Platform
+# 🏥 CareConnect - Smart Hospital OPD Queue & Appointment Management Platform
 
-**CareConnect** is an enterprise-grade Hospital Information Management System (HIMS), Outpatient Department (OPD) Triage Desk, Digital Token Queue, and Medical Invoicing Platform. Built with **Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, and MongoDB**, it provides role-based workspaces for Super Administrators, Hospital Admins, Clinicians (Doctors), Front Desk Receptionists, and Patients.
+[![Next.js 16](https://img.shields.io/badge/Next.js-16.4-black.svg?style=flat&logo=next.js)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19.3-blue.svg?style=flat&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7.0-blue.svg?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Atlas-green.svg?style=flat&logo=mongodb)](https://www.mongodb.com/)
+[![Security](https://img.shields.io/badge/Security-Argon2id%20%2B%20HMAC-red.svg?style=flat&logo=auth0)](https://github.com/P-H-C/phc-winner-argon2)
+
+CareConnect is a comprehensive, production-grade Hospital Outpatient Department (OPD) Queue and Appointment Coordination System. It streamlines the patient lifecycle from digital booking and walk-in front-desk triage, to doctor consultation queues, digital prescription generation, and automated role-based hospital administration.
 
 ---
 
 ## 📑 Table of Contents
-1. [Platform Architecture & Role Hierarchy](#-platform-architecture--role-hierarchy)
-2. [Staff Side Operations (Role-by-Role)](#-staff-side-operations-role-by-role)
-   - [Super Administrator](#1-super-administrator)
-   - [Hospital Administrator](#2-hospital-administrator)
-   - [Clinician / Doctor Desk](#3-clinician--doctor-desk)
-   - [Receptionist & Front Desk Cashier](#4-receptionist--front-desk-cashier)
-3. [Patient Portal Experience](#-patient-portal-experience)
-4. [Master Modules Directory (20 Modules)](#-master-modules-directory-20-modules)
-5. [Hardware, Device & Deployment Requirements](#-hardware-device--deployment-requirements)
-6. [Security & Architectural Safeguards](#-security--architectural-safeguards)
-7. [System Limitations & Enterprise Roadmap](#-system-limitations--enterprise-roadmap)
-8. [Installation & Live Demo Seeding](#-installation--live-demo-seeding)
+1. [System Architecture & Technology Stack](#1-system-architecture--technology-stack)
+2. [Authentication & Login Data Flow](#2-authentication--login-data-flow)
+3. [Master Login Credentials Table](#3-master-login-credentials-table)
+4. [Role-Based Access Control (RBAC) Matrix](#4-role-based-access-control-rbac-matrix)
+5. [Core Modules & Operational Features](#5-core-modules--operational-features)
+6. [Database Schema Overview](#6-database-schema-overview)
+7. [Installation & Setup Guide](#7-installation--setup-guide)
 
 ---
 
-## 🏛 Platform Architecture & Role Hierarchy
+## 1. System Architecture & Technology Stack
 
-CareConnect enforces a zero-trust multi-collection identity model with global email-collision prevention, separating clinical and administrative privileges:
-
-```
-                                  ┌─────────────────────────────┐
-                                  │      CareConnect Cloud      │
-                                  └──────────────┬──────────────┘
-                                                 │
-            ┌────────────────────────────────────┼────────────────────────────────────┐
-            ▼                                    ▼                                    ▼
-┌────────────────────────┐           ┌────────────────────────┐           ┌────────────────────────┐
-│     PATIENT PORTAL     │           │   CLINICAL SUITE (OPD) │           │  ADMINISTRATIVE ENGINE │
-│  (Verified Patients)   │           │   (Doctors & Triage)   │           │ (Admins & Super Admin) │
-├────────────────────────┤           ├────────────────────────┤           ├────────────────────────┤
-│ • My Live Ticket       │           │ • OPD Desk & Rx Pad    │           │ • Operations Hub       │
-│ • Appointments Booking │           │ • Live Queue Console   │           │ • Unified Staff/Doctor │
-│ • Health Vault & Rx    │           │ • Daily Appointments   │           │ • Billing & Cashier    │
-│ • Bills & UPI QR Pay   │           │ • Duty Roster & Leave  │           │ • System Health & DB   │
-│ • Doctor Reviews/CSAT  │           │ • Patient Testimonials │           │ • Hospital Profile     │
-└────────────────────────┘           └────────────────────────┘           └────────────────────────┘
-```
-
-### Access Control Matrix
-
-| Role | Default Landing Page | Primary Responsibilities |
-| :--- | :--- | :--- |
-| **SUPER_ADMIN** | `/staff/dashboard` (Operations Hub) | System health diagnostics, 1-click DB backup, hospital configurations, global governance |
-| **ADMIN** | `/staff/dashboard` (Operations Hub) | Department management, unified staff & doctor provisioning, leave approvals, financial ledger |
-| **DOCTOR** | `/staff/dashboard` (OPD Desk & Rx Pad) | Patient consultations, e-Prescription issuance with vitals, live room calling, personal roster |
-| **RECEPTIONIST**| `/staff/dashboard` (Front Desk & Triage) | Walk-in patient registration, fast token triage, cashier desk, bill settlements, receipt printing |
-| **PATIENT** | `/patient/dashboard` (Patient Overview) | Booking specialist consultations, tracking live ticket wait time, paying dues via UPI, Rx vault |
+| Layer | Technology | Description |
+|---|---|---|
+| **Frontend Framework** | **Next.js 16 (App Router) + React 19** | Server & Client Components, Responsive Glassmorphism UI |
+| **Language** | **TypeScript 7** | End-to-end strict type-safety across schema, API, and UI |
+| **Styling & Icons** | **Tailwind CSS + Lucide React** | Modern clinical design system with fluid animations |
+| **Database** | **MongoDB Atlas + Mongoose 9** | Scalable document store with relational index references |
+| **Password Security** | **Argon2id (`@node-rs/argon2`)** | Memory-hard, GPU-resistant modern password hashing |
+| **Session & Token** | **HMAC-SHA256 Signed Cookies** | HTTP-Only, Secure, SameSite protected `careconnect_session` |
+| **Form Management** | **React Hook Form + Zod** | Client-side validation synchronized with backend schemas |
+| **Notifications** | **Sonner** | Interactive toast notifications with role-aware status alerts |
 
 ---
 
-## 👩‍⚕️ Staff Side Operations (Role-by-Role)
+## 2. Authentication & Login Data Flow
 
-### 1. Super Administrator
-- **Hospital Profile & Multi-Branch Config** ([`HospitalProfileView.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/hospital/HospitalProfileView.tsx)): Configures hospital trade name, NABH registration number, 24x7 emergency helpline, OPD hours, and brand header.
-- **Backup & System Maintenance** ([`SystemMaintenanceManager.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/system/SystemMaintenanceManager.tsx)):
-  - 1-Click JSON Snapshot Export (`/api/system/backup`) containing all collections (Doctors, Departments, Patients, Appointments, Tokens, Invoices).
-  - Real-time MongoDB connection latency and memory telemetry (`/api/system/health`).
-  - 90-day automated audit log retention policy enforcement.
+CareConnect implements a multi-tier identity resolution pipeline that automatically differentiates between **Super Admins**, **Hospital Staff (Doctors, Admins, Receptionists)**, and **Patients**, accepting either **Email Addresses** or **Employee IDs**.
 
-### 2. Hospital Administrator
-- **Operations Hub Dashboard**: Live KPI counters for Today's Appointments, Checked-In Patients, In-Consultation Queue, and Total Hospital Revenue.
-- **Unified Staff & Doctor Management** ([`StaffDoctorManager.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/staff/StaffDoctorManager.tsx)): Provision clinicians and hospital receptionists in a unified full-width single-card console with auto-credential generation (`DOC-xxx`, `REC-xxx`), password hashing, department linking, and consultation fee assignment.
-- **Doctor Shift & Leave Approvals** ([`DoctorScheduleManager.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/doctor/DoctorScheduleManager.tsx)): Approve/Reject casual, medical, or conference leaves and verify locum doctor coverage.
-- **Clinical Analytics & CSV Export** ([`AnalyticsReports.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/analytics/AnalyticsReports.tsx)): Downloadable operational reports for audit compliance.
+### 2.1 Complete Authentication Sequence Diagram
 
-### 3. Clinician / Doctor Desk
-- **My OPD Desk & Rx Pad** ([`DoctorConsultationDesk.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/doctor/DoctorConsultationDesk.tsx)):
-  - Dedicated consultation workstation: displays attending patient vitals (Blood Pressure, Pulse, Temperature, Weight).
-  - Diagnostic clinical notes and ICD-compliant complaint recording.
-  - Interactive e-Prescription builder: Medicine name, dosage (e.g. `500mg`), frequency (`1-0-1`), duration (`5 Days`), and dietary instructions (`After food`).
-  - 1-Click "Complete Consultation & Advance Queue" button.
-- **My Roster & Leave Application**: View assigned morning (`09:00 AM - 01:00 PM`) and evening (`05:00 PM - 08:00 PM`) clinic slots; apply for leave with replacement specialist assignment.
-- **Doctor Scorecards & Reviews** ([`FeedbackReviewManager.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/feedback/FeedbackReviewManager.tsx)): Review verified patient testimonials, waiting-time scores, and 5-star clinical satisfaction ratings.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Patient / Doctor / Admin
+    participant UI as LoginForm (Client UI)
+    participant API as /api/auth/login (Next.js Route)
+    participant RL as Rate Limiter (Memory Store)
+    participant IR as IdentityResolver (Backend Service)
+    participant DB as MongoDB Collections
+    participant PS as PasswordService (Argon2id)
+    participant SS as SessionService (HMAC Token)
+    participant Guard as Middleware & Route Guard
 
-### 4. Receptionist & Front Desk Cashier
-- **Front Desk & Triage Hub** ([`ReceptionistDesk.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/reception/ReceptionistDesk.tsx)):
-  - Fast-Track Walk-in Token generator (Name, Phone, Department, Specialist, Normal/Emergency Priority).
-  - 1-Click Patient Check-in for today's scheduled appointment arrivals.
-  - Active Doctor Room Glance (Specialization, assigned OPD Room No, current duty status).
-- **Hospital Billing & Cashier Desk** ([`HospitalBillingManager.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/billing/HospitalBillingManager.tsx)):
-  - Real-time Cash Drawer KPI (Physical cash collected vs Bank Direct UPI / Card settlements).
-  - Outstanding Dues Ledger: Filter unpaid balances and collect pending fees.
-  - Auto-calculated itemized invoices: Doctor consultation fee + Hospital OPD Registration card charges.
-- **Official Medical Tax Receipts** ([`InvoiceReceiptModal.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/billing/InvoiceReceiptModal.tsx)): Instant print-ready receipts with hospital accreditation watermark, patient UHID, doctor specialization, UTR tracking code, and cashier authorization stamp.
-- **Full-Screen Waiting Room TV Display Mode**: Launches high-contrast, dark-mode TV display (`#0F172A`) showing `NOW CALLING`, room numbers, and next waiting tokens with audio notifications.
+    User->>UI: Enters Email / Employee ID & Password
+    UI->>UI: Validates fields with Zod (loginSchema)
+    UI->>API: POST /api/auth/login { email, password, rememberMe }
+    
+    API->>RL: Check IP Rate Limit (Max 10 req / 60 sec)
+    alt Rate Limit Exceeded
+        RL-->>API: 429 Too Many Requests
+        API-->>UI: Show Rate Limit Error Toast
+    end
 
----
+    API->>IR: findByNormalizedEmail(email) OR findByEmployeeId(id)
+    
+    IR->>DB: 1. Check super_admins collection
+    alt Is Super Admin
+        DB-->>IR: Return SuperAdmin document
+    else Not Super Admin
+        IR->>DB: 2. Check employees collection (Doctors, Admins, Receptionists)
+        alt Is Employee
+            DB-->>IR: Return Employee document (Role + Dept + EmployeeId)
+        else Not Employee
+            IR->>DB: 3. Check patients & users collections
+            DB-->>IR: Return Patient document (or null)
+        end
+    end
 
-## 🧑‍💼 Patient Portal Experience
+    alt Identity Not Found
+        IR-->>API: Throw AccountNotFoundError (404)
+        API-->>UI: 404 ACCOUNT_NOT_FOUND
+        UI->>UI: Display "User Not Found" banner
+        UI->>User: Auto-redirect to /register?email=...
+    end
 
-Designed for clean mobile and desktop usability to reduce hospital lobby congestion:
+    API->>PS: verifyPassword(plainPassword, passwordHash)
+    alt Password Mismatch
+        PS-->>API: False
+        API->>DB: Write LOGIN_FAILED to audit_logs
+        API-->>UI: 401 AuthenticationError ("Invalid email or password")
+    end
 
-1. **Patient Overview Hub**:
-   - Displays verified patient identity badge, next scheduled consultation reminder, and one-tap emergency trauma dispatch link.
-2. **Live Queue & Token Status ("My Live Ticket")**:
-   - Shows active token number (e.g. `A-01`), attending doctor name, and clinic room number.
-   - **Algorithmic Waiting-Time Estimation**: Real-time projection ($T_{wait} = \text{Queue Position} \times 10\text{ mins}$) showing `~15 - 20 mins` and `2 Patients Ahead of You`.
-3. **Specialist Appointment Booking**:
-   - Filter by Medical Department (Cardiology, Neurology, Pediatrics, etc.) and view doctor profiles with consultation fees.
-   - Auto-filled verified credentials (Name, Phone, Email) with date-picker and available time-slots.
-4. **Bills, Invoices & Tax Receipts** ([`PatientBillsView.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/patient/PatientBillsView.tsx)):
-   - **Pending Due Alert Banner**: Displays outstanding consultation fees prominently.
-   - **Instant Dynamic UPI QR Code**: Generates hospital VPA (`careconnect@icici`) payment QR compatible with PhonePe, Google Pay, and Paytm with pre-filled amount.
-   - **Print / Download E-Receipt**: Tax invoice valid for corporate and health insurance claims.
-5. **Medical Prescriptions Vault** ([`PrescriptionVault.tsx`](file:///d:/kaizen/Collage%20project/CareConnect/src/components/patient/PrescriptionVault.tsx)):
-   - Permanent digital health vault storing all past prescriptions, diagnostic lab investigation orders, and doctor advice.
-6. **Doctor Reviews & Ratings**:
-   - 5-Star post-consultation evaluation rating clinical care, waiting time, and clinic hygiene.
+    API->>DB: Update lastLogin date & write LOGIN_SUCCESS audit log
+    API->>SS: signSessionToken({ sub, email, name, role, identityType })
+    SS-->>API: Signed Cryptographic JWT / HMAC Token
 
----
+    API->>API: Attach HTTP-Only Cookie: "careconnect_session"
+    API-->>UI: 200 OK { success: true, user: { role, name, email } }
 
-## 📦 Master Modules Directory (20 Modules)
-
-| No. | Module Name | Primary User | Core Capabilities |
-| :---: | :--- | :--- | :--- |
-| **01** | **Authentication & Security** | All Users | Multi-collection isolation (`super_admins` vs `users`), Argon2id hashing, Google OAuth2, HTTP-only signed cookies. |
-| **02** | **Role-Based Access Control** | All Users | Granular permissions separating Doctor, Receptionist, Admin, Super Admin, and Patient route handlers. |
-| **03** | **Operations Dashboard** | Admin | Real-time clinic statistics, triage volume, live queue capacity, and revenue summary. |
-| **04** | **Specialist Directory** | All Users | Clinician credentials, experience years, department affiliations, and consultation fees. |
-| **05** | **Staff & Doctor Provisioning** | Admin | Unified onboarding for doctors and front-desk personnel with credentials generation. |
-| **06** | **Digital Token Queue** | Reception / Doctor | Token generation (`A-01` to `A-10`), Calling Room, In-Consultation, and Completed states. |
-| **07** | **Doctor OPD Workstation** | Doctor | Stethoscope desk, patient vitals monitoring, diagnosis recording, and Rx prescription generator. |
-| **08** | **Receptionist Triage Desk** | Receptionist | Walk-in patient triage, 1-click appointment check-in, on-duty clinician room overview. |
-| **09** | **Full-Screen TV Display** | Waiting Area | Broadcast-grade TV display with high contrast and real-time token calling status. |
-| **10** | **In-App Notification Center** | All Users | Real-time alert bell with unread count badges, audio chimes, and mark-all-read capabilities. |
-| **11** | **Prescriptions Health Vault** | Patient | Permanent electronic health vault for digital prescriptions and lab test recommendations. |
-| **12** | **Clinical Analytics & Reports** | Admin | OPD volume charts, queue wait times, doctor workload, and one-click CSV data export. |
-| **13** | **Schedule & Slot Management** | Doctor / Admin | Doctor shift configuration (Morning/Evening), weekly rosters, and leave approvals with locum replacement. |
-| **14** | **Walk-in Management** | Receptionist | Instant walk-in token issuance with emergency priority bypass for trauma cases. |
-| **15** | **Waiting-Time Estimation** | Patient / TV | Dynamic queue wait algorithm: $T_{wait} = (\text{Position} - 1) \times \bar{D}_{\text{consult}}$. |
-| **16** | **Feedback & CSAT Ratings** | Patient / Admin | Post-consultation 5-star scoring, cleanliness ratings, and doctor scorecards. |
-| **17** | **Payment & Invoicing** | Reception / Patient | Cashier desk, Cash/UPI/Card POS settlement, Dynamic UPI QR code, printable medical tax receipt. |
-| **18** | **Hospital Profile & Config** | Super Admin | Hospital name branding, NABH licensing number, working hours, and 24x7 emergency phone config. |
-| **19** | **Profile & Preferences** | All Users | Profile inspection, SHA-256 password reset, email alerts, and queue audio chime toggles. |
-| **20** | **Backup & System Maintenance**| Super Admin | 1-Click JSON database archive export, MongoDB health telemetry, and 90-day audit log purge. |
-
----
-
-## 💻 Hardware, Device & Deployment Requirements
-
-| Device Type | Intended User / Location | Minimum Recommended Specifications |
-| :--- | :--- | :--- |
-| **Desktop / Laptop PC** | Administrative Office, Cashier Counter, Doctor Consultation Room | Modern web browser (Chrome, Edge, Firefox, Safari), 4GB RAM, 1080p display resolution |
-| **Touch Tablet (iPad / Android)** | Front Desk Triage, Bedside Clinical Rounds | 10-inch screen or higher, touchscreen support for rapid patient check-in |
-| **Smart TV / HDMI Monitor** | Outpatient Waiting Hall, Lobby Ceiling Mounts | 43-inch to 65-inch Full HD (1920x1080) Smart TV or Mini-PC HDMI stick running Chrome in fullscreen kiosk mode |
-| **Mobile Smartphones** | Outpatient Patients & Relatives | iOS 14+ or Android 10+ running any mobile browser; supports camera for UPI QR scanning |
-| **Receipt Printers** | Hospital Cashier Desk | Standard thermal POS printer (80mm / 3-inch) or standard A4 laser printer via browser print dialog |
-
----
-
-## 🔒 Security & Architectural Safeguards
-
-1. **Zero-Trust Multi-Collection Storage**:
-   - `super_admins`: Isolated platform administration partition. No public registration route exists.
-   - `users`: Platform employees and clinical staff with strict role guards.
-   - `patients`: Outpatient accounts with normalized email indexing and self-service portals.
-2. **OWASP Cryptographic Standards**:
-   - Password hashing utilizes **Argon2id** (`@node-rs/argon2`) configured with memory cost `19456` (19 MiB), time cost `2`, and parallelism `1`.
-3. **Signed HTTP-Only Session Security**:
-   - Cookie-based session token (`careconnect_session`) cryptographically signed using SHA-256 HMAC with constant-time comparison against timing attacks.
-4. **Global Input Sanitization**:
-   - Strict server-side runtime boundary validation using **Zod** on every REST API route.
-5. **Rate Limiting Engine**:
-   - Sliding-window in-memory rate limiting on authentication routes (maximum 10 requests per 60 seconds) to mitigate brute-force credential stuffing.
-
----
-
-## ⚠️ System Limitations & Enterprise Roadmap
-
-- **ESC/POS Direct Raw Printing**: Current receipts render in browser-standard `@media print` styling (compatible with both A4 and 80mm thermal printers). Future iterations will support direct USB/Network ESC/POS raw socket printing without browser print dialogs.
-- **SMS Gateway Provider**: Notification architecture includes in-app alerts and console email dispatch. Integrating third-party SMS providers (Twilio, Gupshup, Kaleyra) requires setting active API keys.
-- **Tele-Consultation WebRTC**: Video consultation rooms for remote follow-ups are slated for the v2.2 milestone.
-- **Biometric Integration**: Currently supports Google OAuth2 and credentials; finger-scanner hardware integration requires client-side WebAuthn drivers.
-
----
-
-## 🚀 Installation & Live Demo Seeding
-
-### Prerequisites
-- Node.js `v20.x` or higher
-- MongoDB Atlas cluster or local MongoDB instance (`v6.0+`)
-
-### 1. Clone & Install Dependencies
-```bash
-git clone https://github.com/your-org/careconnect.git
-cd careconnect
-npm install
+    UI->>Guard: Navigate to Dashboard based on Role
+    alt Role === PATIENT
+        Guard->>User: Display /patient/dashboard
+    else Role in [DOCTOR, RECEPTIONIST, ADMIN, SUPER_ADMIN]
+        Guard->>User: Display /staff/dashboard
+    end
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file in the project root:
+### 2.2 Key Security Features of the Login Engine
+1. **Identifier Auto-Detection**:
+   - If the user enters an identifier without an `@` symbol (e.g., `DOC-2026-001` or `EMP-ADM-01`), the backend automatically treats it as an **Employee ID**.
+   - If the user enters an email address, it normalizes casing and whitespace before matching.
+2. **Argon2id Cryptographic Standard**:
+   - Memory Cost: `65536 KB` (64 MB)
+   - Time Cost: `3 iterations`
+   - Parallelism: `4 threads`
+   - Immune to GPU-accelerated brute-force attacks.
+3. **HTTP-Only Session Management**:
+   - The session token is stored strictly in an `httpOnly: true`, `sameSite: "lax"`, and `path: "/"` cookie named `careconnect_session`. JavaScript on the client cannot read the raw token, preventing XSS-based session hijacking.
+4. **Smart "User Not Found" Redirection**:
+   - If an unregistered email attempts to sign in, the backend responds with `ACCOUNT_NOT_FOUND` (404). The frontend detects this and smoothly redirects the user to `/register?email=...` with the email pre-populated for frictionless onboarding.
+5. **Bidirectional Route Protection**:
+   - A logged-in **Patient** attempting to access `/staff/dashboard` is intercepted and rerouted to `/patient/dashboard`.
+   - A logged-in **Doctor or Staff member** attempting to access `/patient/dashboard` is rerouted to `/staff/dashboard`.
+
+---
+
+## 3. Master Login Credentials Table
+
+All credentials below are pre-configured, verified, and ready for immediate testing.
+
+### 🛡️ 3.1 Super Administrator Account
+| Name | Role | Email | Employee ID | Password | Target Dashboard |
+|---|---|---|---|---|---|
+| Chief System Administrator | `SUPER_ADMIN` | `admin@gmail.com` | `N/A` | `Admin@123` | `/staff/dashboard` |
+
+*Note: You can also use the one-click "Super Admin" auto-fill button directly on the `/login` page under the "Hospital Staff" tab.*
+
+---
+
+### 🏥 3.2 Hospital Administration (Admins)
+| Name | Role | Email | Employee ID | Password | Department | Target Dashboard |
+|---|---|---|---|---|---|---|
+| Suresh Krishnan | `ADMIN` | `suresh.admin@careconnect.health` | `EMP-ADM-01` | `Password123!` | Administration | `/staff/dashboard` |
+| Priya Ramanathan | `ADMIN` | `priya.ops@careconnect.health` | `EMP-ADM-02` | `Password123!` | Operations | `/staff/dashboard` |
+
+---
+
+### 🩺 3.3 Specialist Doctors (5 Clinical Departments)
+*You can log in using either the **Email Address** OR the **Employee / Doctor ID** with the same password.*
+
+| Doctor Name | Department | Specialization | Email | Doctor ID | Password | OPD Room |
+|---|---|---|---|---|---|---|
+| **Dr. Sarah Jenkins** | Cardiology | Interventional Cardiologist | `sarah.jenkins@careconnect.health` | `DOC-2026-001` | `Password123!` | Room 201 |
+| **Dr. Rajesh Sundaram** | Neurology | Senior Neurologist | `rajesh.sundaram@careconnect.health` | `DOC-2026-002` | `Password123!` | Room 302 |
+| **Dr. Vikram Sethi** | Orthopedics | Orthopedic Surgeon | `vikram.sethi@careconnect.health` | `DOC-2026-003` | `Password123!` | Room 105 |
+| **Dr. Ananya Natarajan** | Pediatrics | Senior Pediatrician | `ananya.natarajan@careconnect.health` | `DOC-2026-004` | `Password123!` | Room 102 |
+| **Dr. Arvind Swaminathan** | General Medicine | Chief Consultant Physician | `arvind.swaminathan@careconnect.health` | `DOC-2026-005` | `Password123!` | Room 101 |
+
+---
+
+### 📋 3.4 Front Desk & Reception Staff
+| Name | Role | Email | Employee ID | Password | Operational Desk | Target Dashboard |
+|---|---|---|---|---|---|---|
+| Kavitha Murugan | `RECEPTIONIST` | `kavitha.reception@careconnect.health` | `EMP-REC-01` | `Password123!` | Front Desk & Triage | `/staff/dashboard` |
+| Vignesh Balaji | `RECEPTIONIST` | `vignesh.triage@careconnect.health` | `EMP-REC-02` | `Password123!` | Emergency Triage Desk | `/staff/dashboard` |
+| Deepa Senthil | `RECEPTIONIST` | `deepa.billing@careconnect.health` | `EMP-REC-03` | `Password123!` | Billing & Cashier Desk | `/staff/dashboard` |
+
+---
+
+### 👤 3.5 Registered Patient Accounts
+| Patient Name | Blood Group | Gender | Registered Email | Password | Target Dashboard |
+|---|---|---|---|---|---|
+| Arunachalam Pillai | A+ | Male | `arunachalam@example.com` | `Password123!` | `/patient/dashboard` |
+| Sneha Sundar | O+ | Female | `sneha.sundar@example.com` | `Password123!` | `/patient/dashboard` |
+| Ramesh Kumar | B+ | Male | `ramesh.kumar@example.com` | `Password123!` | `/patient/dashboard` |
+| Meenakshi Venkat | AB+ | Female | `meenakshi.v@example.com` | `Password123!` | `/patient/dashboard` |
+| Karthik Subramaniam | O- | Male | `karthik.subbu@example.com` | `Password123!` | `/patient/dashboard` |
+
+> 💡 **Google OAuth Alternative**: Patients can also click **"Continue with Google"** on `/login` or `/register` to instantly authenticate with their Google account.
+
+---
+
+## 4. Role-Based Access Control (RBAC) Matrix
+
+| Feature / Action | `PATIENT` | `RECEPTIONIST` | `DOCTOR` | `ADMIN` | `SUPER_ADMIN` |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Book OPD Appointment** | ✅ | ✅ (Walk-in Desk) | ❌ | ✅ | ✅ |
+| **View Own Live Token Status** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Cancel Own Appointment** | ✅ | ✅ | ❌ | ✅ | ✅ |
+| **Confirm / Check-in Patient at Desk** | ❌ (Staff only) | ✅ | ✅ | ✅ | ✅ |
+| **Reschedule / Change Appointment Time** | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Call Next Patient in OPD Queue** | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Write Clinical Prescription & Notes** | ❌ | ❌ | ✅ | ❌ | ✅ |
+| **Issue Invoices & Collect Billing** | ❌ | ✅ | ❌ | ✅ | ✅ |
+| **Add / Manage Doctors & Staff** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Modify Hospital Operational Settings** | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+---
+
+## 5. Core Modules & Operational Features
+
+### 1. Patient Portal (`/patient/dashboard`)
+- **Direct OPD Booking**: Select specialist doctor, consultation date, and preferred slot.
+- **Appointment Approval Workflow**: Once booked, ticket displays as **Pending Confirmation** until the hospital front-desk verifies and confirms check-in.
+- **Live Queue Counter**: Displays your token number (e.g. `CARD-004`), doctor consultation room number, and current token being examined in real time.
+- **Self-Service Cancellation**: Patients can safely cancel pending tickets without complex hurdles.
+
+### 2. Hospital Reception Console (`/staff/dashboard`)
+- **Appointment Verification & Desk Check-In**: Front desk receptionists confirm patient arrivals, issue physical queue tokens, or reschedule appointment timings.
+- **Date & Department Filtering**: Live reactive filters by date and clinical department (Cardiology, Neurology, Orthopedics, Pediatrics, General Medicine).
+- **Walk-in Triage**: Instant walk-in token generation for non-registered emergency patients.
+
+### 3. Doctor Consultation Desk (`/staff/dashboard`)
+- **OPD Queue Calling**: View active patient queue, mark "In Consultation", and call the next token.
+- **Digital Rx Writer**: Enter clinical observations, vitals, diagnosis, medication dosages, and follow-up schedules.
+- **Medical History Access**: Direct inspection of previous hospital visits and lab prescriptions.
+
+### 4. Hospital & System Administration
+- **Staff Roster Management**: Provision new doctors, assign department heads, and manage employee accounts.
+- **Audit Trails**: Full system audit log recording all logins, token state transitions, and administrative overrides.
+
+---
+
+## 6. Database Schema Overview
+
+```
+careconnect/
+├── super_admins        # System owner records (Argon2id password hashes)
+├── employees           # Doctors, Hospital Admins, and Receptionists
+├── patients            # Dedicated clinical patient records
+├── users               # Shared user identities & OAuth linkages
+├── departments         # Clinical departments (Cardiology, Neurology, etc.)
+├── doctors             # Specialist doctor profiles, fees & schedules
+├── appointments        # Scheduled bookings & desk check-in statuses
+├── tokens              # Daily live OPD queue triage tokens
+├── invoices            # Billing, consultation fees & receipt statuses
+└── audit_logs          # Immutable security and access event logs
+```
+
+---
+
+## 7. Installation & Setup Guide
+
+### 7.1 Prerequisites
+- **Node.js**: `v20.x` or `v22.x` / `v24.x`
+- **npm**: `v10+`
+- **MongoDB Atlas** or Local MongoDB instance
+
+### 7.2 Environment Configuration
+Create a `.env` file in the project root with the following keys:
 ```env
-MONGODB_URI="mongodb+srv://<username>:<password>@cluster0.mongodb.net/careconnect?retryWrites=true&w=majority"
+NODE_ENV="development"
+MONGODB_URI="mongodb+srv://<username>:<password>@cluster0.uurxkmz.mongodb.net/careconnect?retryWrites=true&w=majority"
+MONGODB_DB_NAME="careconnect"
+
 APP_URL="http://localhost:3000"
-AUTH_SECRET="careconnect-ultra-secure-auth-secret-32-chars-long-test-key-2026"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_NAME="CareConnect"
 
-# Google OAuth 2.0 (Optional for Social Login)
-AUTH_GOOGLE_ID="your-google-client-id"
-AUTH_GOOGLE_SECRET="your-google-client-secret"
+# Session Security Secrets
+AUTH_SECRET="5a17c012b5370cda4b04a44e4fc378ead973f61b2f8337ec72fd85ecb0392c68"
+JWT_SECRET="5a17c012b5370cda4b04a44e4fc378ead973f61b2f8337ec72fd85ecb0392c68"
 
-# Super Admin Initial Credentials
+# Super Admin Initial Bootstrap
 SUPER_ADMIN_NAME="Chief System Administrator"
 SUPER_ADMIN_EMAIL="admin@gmail.com"
 SUPER_ADMIN_INITIAL_PASSWORD="Admin@123"
-
-# Email Provider
-EMAIL_PROVIDER="console"
-EMAIL_FROM="CareConnect Identity <noreply@careconnect.health>"
 ```
 
-### 3. Seed Live Enterprise Demo Data (10 Records Per Module)
-Populate the database with 10 realistic departments, doctors, patients, appointments, queue tokens, invoices, schedules, and reviews:
+### 7.3 Installation & Seeding Commands
 ```bash
-npx tsx scripts/seed-enterprise-demo.ts
-```
+# 1. Install dependencies
+npm install
 
-### 4. Run Development Server
-```bash
+# 2. Provision initial Super Admin
+npm run bootstrap:super-admin
+
+# 3. Seed 5 Clinical Departments, 5 Doctors, 5 Staff, and 5 Patients
+npm run seed:staff
+
+# 4. Start Development Server
 npm run dev
 ```
-Open **`http://localhost:3000`** in your browser.
 
-### 5. Run Automated Test Suite
-Execute the 24 unit and integration tests:
-```bash
-npm test
-```
+The web application will be live at `http://localhost:3000`.
 
 ---
 
-## 👥 Default Demo Credentials
-
-| Role | Email | Password | Access Level |
-| :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@gmail.com` | `Admin@123` | Full System Governance, Backup & Settings |
-| **Hospital Admin** | `admin@careconnect.local` | `Password123!` | Operations Hub, Staff/Doctor Provisioning |
-| **Specialist Doctor** | `sarah.jenkins@careconnect.health` | `Password123!` | OPD Desk, Rx Pad, Live Queue Calling |
-| **Front Desk Cashier**| `reception@careconnect.local` | `Password123!` | Walk-ins, Cashier Desk, Token Calling |
-| **Registered Patient** | `arunachalam@example.com` | `Password123!` | Live Ticket, Bookings, UPI Bills & Vault |
-
----
-
-<div align="center">
-  <sub>Developed for Clinical Excellence with CareConnect Health Systems • Certified Enterprise Hospital ERP Architecture</sub>
-</div>
+© 2026 CareConnect Health Systems. All rights reserved.

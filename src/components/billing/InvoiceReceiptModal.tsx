@@ -77,6 +77,28 @@ export function InvoiceReceiptModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:fixed print:inset-0">
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #careconnect-printable-receipt,
+          #careconnect-printable-receipt * {
+            visibility: visible !important;
+          }
+          #careconnect-printable-receipt {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 24px !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: white !important;
+          }
+        }
+      `}</style>
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden my-8 print:shadow-none print:border-none print:m-0 print:max-w-none">
         {/* Modal Top Bar (Hidden in Print) */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80 print:hidden">
@@ -97,14 +119,14 @@ export function InvoiceReceiptModal({
               variant="outline"
               size="sm"
               onClick={handlePrint}
-              className="gap-1.5 text-xs font-semibold"
+              className="gap-1.5 text-xs font-semibold cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print / Save PDF</span>
             </Button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -112,7 +134,7 @@ export function InvoiceReceiptModal({
         </div>
 
         {/* Printable Receipt Paper Container */}
-        <div ref={receiptRef} className="p-8 space-y-6 text-slate-800 print:p-6">
+        <div id="careconnect-printable-receipt" ref={receiptRef} className="p-8 space-y-6 text-slate-800 print:p-6 bg-white">
           {/* Header */}
           <div className="flex items-start justify-between border-b border-slate-200 pb-6">
             <div className="space-y-1">

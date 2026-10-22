@@ -22,6 +22,7 @@ import { sessionService } from "../auth/session";
 import {
   AuthenticationError,
   AccountSuspendedError,
+  AccountNotFoundError,
   ValidationError,
   ConflictError,
 } from "../errors/app-error";
@@ -123,7 +124,10 @@ export class AuthService {
         correlationId: context?.correlationId,
         metadata: { reason: "IDENTITY_NOT_FOUND" },
       });
-      throw new AuthenticationError("Invalid email, employee ID, or password.");
+      if (inputIdentifier.includes("@")) {
+        throw new AccountNotFoundError("User Not Found. No registered account found with this email. Please register first.");
+      }
+      throw new AuthenticationError("User Not Found. Invalid employee ID or password.");
     }
 
     // Check account status
@@ -335,9 +339,13 @@ export class AuthService {
         throw new AccountSuspendedError();
       }
 
-      const updateRepo =
-        identity.identityType === IDENTITY_TYPES.SUPER_ADMIN ? superAdminRepository : userRepository;
-      await updateRepo.updateLastLogin(identity.id);
+      if (identity.identityType === IDENTITY_TYPES.SUPER_ADMIN) {
+        await superAdminRepository.updateLastLogin(identity.id);
+      } else if (identity.identityType === IDENTITY_TYPES.PATIENT) {
+        await patientRepository.updateLastLogin(identity.id);
+      } else {
+        await userRepository.updateLastLogin(identity.id);
+      }
 
       await auditLogRepository.log({
         actorId: identity.id,
@@ -381,6 +389,8 @@ export class AuthService {
 
       if (identity.identityType === IDENTITY_TYPES.SUPER_ADMIN) {
         await superAdminRepository.linkGoogleAccount(identity.id, googleProfile.sub);
+      } else if (identity.identityType === IDENTITY_TYPES.PATIENT) {
+        await patientRepository.linkGoogleAccount(identity.id, googleProfile.sub);
       } else {
         await userRepository.linkGoogleAccount(identity.id, googleProfile.sub);
       }
@@ -426,6 +436,19 @@ export class AuthService {
       status: ACCOUNT_STATUS.ACTIVE,
       emailVerifiedAt: new Date(),
     });
+
+    try {
+      await patientRepository.create({
+        name: googleProfile.name,
+        email: googleProfile.email,
+        normalizedEmail: normalized,
+        googleProviderId: googleProfile.sub,
+        status: ACCOUNT_STATUS.ACTIVE,
+        emailVerifiedAt: new Date(),
+      });
+    } catch {
+      // Ignore if patient document exists
+    }
 
     await auditLogRepository.log({
       actorId: newUser._id,
