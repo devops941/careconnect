@@ -11,6 +11,8 @@ export interface IQueueToken extends Document {
   doctorName: string;
   departmentId: mongoose.Types.ObjectId;
   departmentName: string;
+  hospitalId?: mongoose.Types.ObjectId;
+  hospitalName?: string;
   appointmentId?: mongoose.Types.ObjectId;
   opdRoomNo: string;
   priority: "NORMAL" | "EMERGENCY";
@@ -92,6 +94,15 @@ const QueueTokenSchema = new Schema<IQueueToken>(
     departmentName: {
       type: String,
       required: true,
+      trim: true,
+    },
+    hospitalId: {
+      type: Schema.Types.ObjectId,
+      ref: "Hospital",
+      index: true,
+    },
+    hospitalName: {
+      type: String,
       trim: true,
     },
     appointmentId: {
