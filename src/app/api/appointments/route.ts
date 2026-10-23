@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { Appointment } from "@/models/Appointment";
 import { Doctor } from "@/models/Doctor";
 import { Department } from "@/models/Department";
+import { Hospital } from "@/models/Hospital";
 import { Notification } from "@/models/Notification";
 import { connectToDatabase } from "@/server/database/mongodb";
 import { requireAuth } from "@/server/middleware/require-auth";
@@ -14,6 +15,7 @@ const bookAppointmentSchema = z.object({
   patientName: z.string().trim().min(2, "Patient Name is required"),
   patientPhone: z.string().trim().optional(),
   patientEmail: z.string().trim().email().optional(),
+  hospitalId: z.string().optional(),
   doctorId: z.string().min(1, "Doctor is required"),
   departmentId: z.string().min(1, "Department is required"),
   appointmentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
@@ -32,6 +34,7 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const doctorId = searchParams.get("doctorId");
+    const hospitalId = searchParams.get("hospitalId");
     const status = searchParams.get("status");
     const search = searchParams.get("search");
 
@@ -40,8 +43,13 @@ export async function GET(req: NextRequest) {
     // If patient is querying, strictly restrict to their own records
     if (identity.role === "PATIENT") {
       query.patientId = identity.id;
-    } else if (doctorId) {
-      query.doctorId = doctorId;
+    } else {
+      if (doctorId) {
+        query.doctorId = doctorId;
+      }
+      if (hospitalId && hospitalId !== "ALL") {
+        query.hospitalId = hospitalId;
+      }
     }
 
     if (date) {
@@ -63,6 +71,7 @@ export async function GET(req: NextRequest) {
         { appointmentId: regex },
         { doctorName: regex },
         { departmentName: regex },
+        { hospitalName: regex },
       ];
     }
 
@@ -84,6 +93,17 @@ export async function POST(req: NextRequest) {
     const doc = await Doctor.findById(validated.doctorId);
     const dept = await Department.findById(validated.departmentId);
 
+    // Resolve hospital details
+    let resolvedHospitalId = validated.hospitalId || doc?.hospitalId;
+    let resolvedHospitalName = doc?.hospitalName;
+    if (validated.hospitalId) {
+      const hosp = await Hospital.findById(validated.hospitalId);
+      if (hosp) {
+        resolvedHospitalName = hosp.name;
+        resolvedHospitalId = hosp._id;
+      }
+    }
+
     const randomSuffix = crypto.randomInt(1000, 9999);
     const appointmentId = `APT-${new Date().getFullYear()}-${randomSuffix}`;
 
@@ -100,6 +120,8 @@ export async function POST(req: NextRequest) {
       patientName: validated.patientName,
       patientPhone: validated.patientPhone,
       patientEmail: validated.patientEmail || (identity.role === "PATIENT" ? identity.email : undefined),
+      hospitalId: resolvedHospitalId,
+      hospitalName: resolvedHospitalName || "CareConnect Main Hospital",
       doctorId: validated.doctorId,
       doctorName: doc?.name || "Specialist Doctor",
       departmentId: validated.departmentId,
@@ -119,16 +141,7 @@ export async function POST(req: NextRequest) {
         recipientEmail: validated.patientEmail || identity.email,
         recipientType: "PATIENT",
         title: "Appointment Request Submitted",
-        message: `Your appointment request with ${doc?.name || "the specialist"} for ${validated.appointmentDate} at ${validated.timeSlot} has been submitted (ID: ${appointmentId}). Awaiting hospital confirmation.`,
-        type: "APPOINTMENT",
-      });
-    } else {
-      await Notification.create({
-        recipientEmail: validated.patientEmail || identity.email,
-        recipientType: "PATIENT",
-        title: "Appointment Confirmed",
-        message: `Your consultation with ${doc?.name || "the specialist"} is confirmed for ${validated.appointmentDate} at ${validated.timeSlot}. ID: ${appointmentId}`,
-        type: "APPOINTMENT",
+        message: `Your appointment request ${appointmentId} at ${resolvedHospitalName || "CareConnect"} with ${doc?.name || "Doctor"} for ${validated.appointmentDate} at ${validated.timeSlot} is pending hospital confirmation.`,
       });
     }
 

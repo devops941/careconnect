@@ -20,11 +20,13 @@ import {
   Star,
   Database,
   UserCheck,
+  HeartPulse,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DashboardLayout, NavItem } from "@/components/layout/DashboardLayout";
 import { LiveQueueBoard } from "@/components/queue/LiveQueueBoard";
 import { DoctorConsultationDesk } from "@/components/doctor/DoctorConsultationDesk";
+import { NurseVitalsStation } from "@/components/nurse/NurseVitalsStation";
 import { AppointmentManager } from "@/components/appointments/AppointmentManager";
 import { AdminPatientManager } from "@/components/patient/AdminPatientManager";
 import { DepartmentManager } from "@/components/departments/DepartmentManager";
@@ -32,6 +34,7 @@ import { StaffDoctorManager } from "@/components/staff/StaffDoctorManager";
 import { ReceptionistDesk } from "@/components/reception/ReceptionistDesk";
 import { AnalyticsReports } from "@/components/analytics/AnalyticsReports";
 import { HospitalProfileView } from "@/components/hospital/HospitalProfileView";
+import { HospitalManagement } from "@/components/hospital/HospitalManagement";
 import { HospitalBillingManager } from "@/components/billing/HospitalBillingManager";
 import { DoctorScheduleManager } from "@/components/doctor/DoctorScheduleManager";
 import { FeedbackReviewManager } from "@/components/feedback/FeedbackReviewManager";
@@ -72,11 +75,14 @@ export function StaffDashboardClient({
 }: StaffDashboardClientProps) {
   const isDoctor = user.role === "DOCTOR";
   const isReceptionist = user.role === "RECEPTIONIST";
+  const isNurse = user.role === "NURSE";
   const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
   // Login-tailored default landed section
   const defaultSection = isDoctor
     ? "consultation"
+    : isNurse
+    ? "vitals"
     : isReceptionist
     ? "reception"
     : "overview";
@@ -155,6 +161,11 @@ export function StaffDashboardClient({
           //   badge: "Live",
           // },
           {
+            id: "vitals",
+            title: "OPD Vitals Station",
+            icon: HeartPulse,
+          },
+          {
             id: "schedules",
             title: "My Roster & Leaves",
             icon: Calendar,
@@ -182,16 +193,15 @@ export function StaffDashboardClient({
             badge: "Hub",
           },
           {
+            id: "vitals",
+            title: "OPD Vitals Station",
+            icon: HeartPulse,
+          },
+          {
             id: "appointments",
             title: "Appointments Desk",
             icon: CalendarCheck2,
           },
-          // {
-          //   id: "queue",
-          //   title: "Live Queue & TV Display",
-          //   icon: Clock,
-          //   badge: "Live",
-          // },
           {
             id: "patients",
             title: "Patient Management",
@@ -220,6 +230,33 @@ export function StaffDashboardClient({
         ]
       : []),
 
+    // 2B. NURSE-SPECIFIC SIDEBAR
+    ...(isNurse
+      ? [
+          {
+            id: "vitals",
+            title: "OPD Vitals Station",
+            icon: HeartPulse,
+            badge: "Triage",
+          },
+          {
+            id: "appointments",
+            title: "Appointments Desk",
+            icon: CalendarCheck2,
+          },
+          {
+            id: "patients",
+            title: "Patient Registry",
+            icon: UserCheck,
+          },
+          {
+            id: "schedules",
+            title: "Duty Roster & Shifts",
+            icon: Calendar,
+          },
+        ]
+      : []),
+
     // 3. ADMIN / SUPER_ADMIN SPECIFIC SIDEBAR
     ...(isAdmin
       ? [
@@ -227,6 +264,12 @@ export function StaffDashboardClient({
             id: "overview",
             title: "Operations Hub",
             icon: LayoutDashboard,
+          },
+          {
+            id: "vitals",
+            title: "OPD Vitals Station",
+            icon: HeartPulse,
+            badge: "Nurse",
           },
           {
             id: "appointments",
@@ -255,7 +298,13 @@ export function StaffDashboardClient({
             title: "Department Management",
             icon: Building2,
           },
-           {
+          {
+            id: "hospitals",
+            title: "Hospital Network & Branches",
+            icon: Building2,
+            badge: "Branches",
+          },
+          {
             id: "billing",
             title: "Billing & Cashier",
             icon: CreditCard,
@@ -425,6 +474,13 @@ export function StaffDashboardClient({
         )}
 
         {/* ========================================================================= */}
+        {/* 2B. NURSE OPD VITALS & TRIAGE STATION                                     */}
+        {/* ========================================================================= */}
+        {activeSection === "vitals" && (
+          <NurseVitalsStation nurseName={user.name} />
+        )}
+
+        {/* ========================================================================= */}
         {/* 3. DOCTOR CONSULTATION & DIGITAL RX                                       */}
         {/* ========================================================================= */}
         {activeSection === "consultation" && isDoctor && (
@@ -479,6 +535,23 @@ export function StaffDashboardClient({
         {/* 6. DEPARTMENT MANAGEMENT                                                  */}
         {/* ========================================================================= */}
         {activeSection === "departments" && isAdmin && <DepartmentManager />}
+
+        {/* ========================================================================= */}
+        {/* 6B. MULTI-HOSPITAL NETWORK MANAGEMENT                                     */}
+        {/* ========================================================================= */}
+        {activeSection === "hospitals" && isAdmin && (
+          <HospitalManagement
+            onSelectHospitalBranch={(hospId) => {
+              if (typeof window !== "undefined") {
+                localStorage.setItem("careconnect_selected_hospital", hospId);
+                window.dispatchEvent(
+                  new CustomEvent("hospital-selection-change", { detail: { hospitalId: hospId } })
+                );
+              }
+              handleSelectSection("staff_doctors");
+            }}
+          />
+        )}
 
         {/* ========================================================================= */}
         {/* 7. COMBINED STAFF & DOCTOR MANAGEMENT (UNIFIED!)                          */}

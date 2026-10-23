@@ -14,6 +14,7 @@ import {
   HeartPulse,
   Printer,
   Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
@@ -40,6 +41,26 @@ interface ActiveQueueToken {
   opdRoomNo: string;
   status: string;
   appointmentId?: string;
+  vitalsStatus?: "PENDING" | "RECORDED";
+  vitals?: {
+    height?: number;
+    weight?: number;
+    bmi?: number;
+    bmiCategory?: string;
+    bpSystolic?: number;
+    bpDiastolic?: number;
+    bpFormatted?: string;
+    pulseBpm?: number;
+    tempFahrenheit?: number;
+    spo2Percent?: number;
+    respiratoryRate?: number;
+    rbsMgDl?: number;
+    allergies?: string;
+    chiefComplaints?: string;
+    nurseNotes?: string;
+    recordedByNurseName?: string;
+    recordedAt?: string | Date;
+  };
 }
 
 interface DoctorConsultationDeskProps {
@@ -98,6 +119,22 @@ export function DoctorConsultationDesk({
     ]);
   };
 
+  const handleSelectPatient = (token: ActiveQueueToken) => {
+    setSelectedToken(token);
+    resetForm();
+    if (token.vitals) {
+      if (token.vitals.bpFormatted) {
+        setBp(token.vitals.bpFormatted);
+      } else if (token.vitals.bpSystolic && token.vitals.bpDiastolic) {
+        setBp(`${token.vitals.bpSystolic}/${token.vitals.bpDiastolic} mmHg`);
+      }
+      if (token.vitals.pulseBpm) setPulse(`${token.vitals.pulseBpm} bpm`);
+      if (token.vitals.tempFahrenheit) setTemp(`${token.vitals.tempFahrenheit} °F`);
+      if (token.vitals.weight) setWeight(`${token.vitals.weight} kg`);
+      if (token.vitals.chiefComplaints) setClinicalNotes(token.vitals.chiefComplaints);
+    }
+  };
+
   const fetchDoctorTokens = async () => {
     try {
       const res = await fetch("/api/queue");
@@ -110,7 +147,7 @@ export function DoctorConsultationDesk({
           (t) => t.status === "IN_CONSULTATION" || t.status === "CALLED"
         );
         if (active && !selectedToken) {
-          setSelectedToken(active);
+          handleSelectPatient(active);
         }
       }
     } catch {
@@ -175,7 +212,17 @@ export function DoctorConsultationDesk({
           tokenNumber: selectedToken.tokenNumber,
           diagnosis: diagnosis.trim(),
           clinicalNotes: clinicalNotes.trim(),
-          vitals: { bp, pulse, temp, weight },
+          vitals: {
+            bp,
+            pulse,
+            temp,
+            weight,
+            height: selectedToken.vitals?.height ? `${selectedToken.vitals.height} cm` : undefined,
+            bmi: selectedToken.vitals?.bmi ? `${selectedToken.vitals.bmi} (${selectedToken.vitals.bmiCategory || ""})` : undefined,
+            spo2: selectedToken.vitals?.spo2Percent ? `${selectedToken.vitals.spo2Percent}%` : undefined,
+            rbs: selectedToken.vitals?.rbsMgDl ? `${selectedToken.vitals.rbsMgDl} mg/dL` : undefined,
+            allergies: selectedToken.vitals?.allergies || undefined,
+          },
           medications: medications.filter((m) => m.medicineName.trim().length > 0),
           labInvestigations: labTests
             ? labTests.split(",").map((s) => s.trim()).filter(Boolean)
@@ -252,10 +299,7 @@ export function DoctorConsultationDesk({
                 return (
                   <div
                     key={token._id}
-                    onClick={() => {
-                      setSelectedToken(token);
-                      resetForm();
-                    }}
+                    onClick={() => handleSelectPatient(token)}
                     className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                       isSelected
                         ? "bg-[#CCFBF1]/30 border-[#0F766E] shadow-xs"
@@ -277,9 +321,20 @@ export function DoctorConsultationDesk({
                         }}
                       />
                     </div>
-                    <div className="mt-2">
-                      <p className="text-xs font-bold text-[#16324F]">{token.patientName}</p>
-                      <p className="text-[11px] text-[#64748B]">{token.departmentName} • {token.opdRoomNo}</p>
+                    <div className="mt-2 flex items-start justify-between gap-1">
+                      <div>
+                        <p className="text-xs font-bold text-[#16324F]">{token.patientName}</p>
+                        <p className="text-[11px] text-[#64748B]">{token.departmentName} • {token.opdRoomNo}</p>
+                      </div>
+                      {token.vitalsStatus === "RECORDED" ? (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                          ✓ Vitals Done
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                          ⏳ Vitals Pending
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -321,11 +376,146 @@ export function DoctorConsultationDesk({
             </div>
           ) : (
             <form onSubmit={handleCompleteConsultation} className="space-y-6">
+              {/* OPD Nurse Vitals & Triage Assessment Card */}
+              {selectedToken.vitalsStatus === "RECORDED" && selectedToken.vitals ? (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-teal-50/70 to-blue-50/70 border border-teal-200/80 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-teal-100 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-teal-600 text-white">
+                        <HeartPulse className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-[#16324F] block">
+                          OPD Nurse Vitals & Triage Assessment
+                        </span>
+                        <span className="text-[11px] text-teal-800">
+                          Recorded by Nurse {selectedToken.vitals.recordedByNurseName || "Staff Nurse"}
+                          {selectedToken.vitals.recordedAt &&
+                            ` • ${new Date(selectedToken.vitals.recordedAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}`}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Pre-Consultation Verified
+                    </span>
+                  </div>
+
+                  {/* Critical Allergy Alert */}
+                  {selectedToken.vitals.allergies && (
+                    <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-300 flex items-center gap-2.5 text-rose-800">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <div className="text-xs">
+                        <span className="font-extrabold uppercase tracking-wide">
+                          Critical Allergy Alert:{" "}
+                        </span>
+                        <span className="font-bold underline decoration-rose-400">
+                          {selectedToken.vitals.allergies}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Metric Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-center">
+                    <div className="p-2 rounded-lg bg-white border border-teal-100 shadow-2xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                        Height / Weight
+                      </span>
+                      <span className="text-xs font-extrabold text-[#16324F]">
+                        {selectedToken.vitals.height ? `${selectedToken.vitals.height} cm` : "—"} /{" "}
+                        {selectedToken.vitals.weight ? `${selectedToken.vitals.weight} kg` : "—"}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white border border-teal-100 shadow-2xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                        BMI & Category
+                      </span>
+                      <span className="text-xs font-extrabold text-[#16324F]">
+                        {selectedToken.vitals.bmi || "—"}{" "}
+                        {selectedToken.vitals.bmiCategory && (
+                          <span className="text-[10px] font-semibold text-teal-700">
+                            ({selectedToken.vitals.bmiCategory})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white border border-teal-100 shadow-2xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                        Blood Pressure
+                      </span>
+                      <span className="text-xs font-extrabold text-[#16324F]">
+                        {selectedToken.vitals.bpFormatted ||
+                          (selectedToken.vitals.bpSystolic
+                            ? `${selectedToken.vitals.bpSystolic}/${selectedToken.vitals.bpDiastolic}`
+                            : "—")}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white border border-teal-100 shadow-2xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                        Pulse Rate
+                      </span>
+                      <span className="text-xs font-extrabold text-[#16324F]">
+                        {selectedToken.vitals.pulseBpm ? `${selectedToken.vitals.pulseBpm} bpm` : "—"}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white border border-teal-100 shadow-2xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                        Oxygen (SpO2)
+                      </span>
+                      <span className="text-xs font-extrabold text-[#16324F]">
+                        {selectedToken.vitals.spo2Percent
+                          ? `${selectedToken.vitals.spo2Percent}%`
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white border border-teal-100 shadow-2xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                        Blood Sugar (RBS)
+                      </span>
+                      <span className="text-xs font-extrabold text-[#16324F]">
+                        {selectedToken.vitals.rbsMgDl ? `${selectedToken.vitals.rbsMgDl} mg/dL` : "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Chief Complaints & Nurse Clinical Notes */}
+                  {(selectedToken.vitals.chiefComplaints || selectedToken.vitals.nurseNotes) && (
+                    <div className="p-2.5 rounded-lg bg-white/90 border border-teal-100 text-xs text-[#16324F] space-y-1">
+                      {selectedToken.vitals.chiefComplaints && (
+                        <div>
+                          <span className="font-bold text-teal-900">Patient Complaints: </span>
+                          <span>{selectedToken.vitals.chiefComplaints}</span>
+                        </div>
+                      )}
+                      {selectedToken.vitals.nurseNotes && (
+                        <div>
+                          <span className="font-bold text-slate-600">Nurse Clinical Observation: </span>
+                          <span className="italic text-slate-700">{selectedToken.vitals.nurseNotes}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 flex items-center justify-between text-xs text-amber-800">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      Vitals not yet recorded at OPD Nurse Station. The doctor can record vitals directly below.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Patient Vitals Grid */}
               <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-3">
                 <span className="text-xs font-bold text-[#16324F] flex items-center gap-1.5 uppercase tracking-wider">
                   <HeartPulse className="w-4 h-4 text-rose-500" />
-                  <span>Clinical Vitals</span>
+                  <span>Clinical Vitals (Auto-Filled from Nurse Station / Editable)</span>
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <Input

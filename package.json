@@ -11,7 +11,7 @@
     "bootstrap:super-admin": "tsx scripts/bootstrap-super-admin.ts",
     "reset:db": "tsx scripts/reset-db.ts",
     "seed": "tsx scripts/seed-enterprise-demo.ts",
-    "seed:staff": "tsx scripts/seed-5-dept-staff.ts",
+    "verify:seed": "tsx scripts/verify-seed.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { Doctor } from "@/models/Doctor";
 import { Department } from "@/models/Department";
 import { Employee } from "@/models/Employee";
+import { Hospital } from "@/models/Hospital";
+import { hospitalRepository } from "@/server/repositories/hospital.repository";
 import { passwordService } from "@/server/services/password.service";
 import { connectToDatabase } from "@/server/database/mongodb";
 import { requireRole } from "@/server/middleware/require-role";
@@ -18,23 +20,53 @@ const doctorSchema = z.object({
   medicalCouncilRegNo: z.string().optional(),
   specialization: z.string().trim().min(2, "Specialization is required"),
   departmentId: z.string().min(1, "Department is required"),
+  hospitalId: z.string().optional(),
   qualification: z.string().default("MBBS, MD"),
   experienceYears: z.coerce.number().min(0).default(5),
   consultationFee: z.coerce.number().min(0).default(500),
   opdRoomNo: z.string().default("Room 201"),
-  availableDays: z.array(z.string()).default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]),
+  availableDays: z.array(z.string()).default([
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ]),
+  shiftHours: z
+    .object({
+      morningSlot: z.string().default("09:00 AM - 01:00 PM"),
+      eveningSlot: z.string().default("05:00 PM - 08:00 PM"),
+    })
+    .optional(),
+  timeSlots: z.array(z.string()).default([
+    "09:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "02:00 PM - 03:00 PM",
+    "03:00 PM - 04:00 PM",
+    "04:00 PM - 05:00 PM",
+  ]),
+  slotDurationMinutes: z.coerce.number().default(30),
   status: z.enum(["ACTIVE", "ON_LEAVE", "INACTIVE"]).default("ACTIVE"),
 });
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
+    // Ensure default hospital and link orphan legacy doctors if any
+    await hospitalRepository.ensureDefaultHospital();
+
     const { searchParams } = new URL(req.url);
     const departmentId = searchParams.get("departmentId");
+    const hospitalId = searchParams.get("hospitalId");
 
     const query: Record<string, any> = {};
     if (departmentId) {
       query.departmentId = departmentId;
+    }
+    if (hospitalId && hospitalId !== "ALL") {
+      query.hospitalId = hospitalId;
     }
 
     const doctors = await Doctor.find(query).sort({ name: 1 }).exec();
@@ -67,7 +99,16 @@ export async function POST(req: NextRequest) {
 
     const dept = await Department.findById(validated.departmentId);
 
-    // 1. Create and save Doctor record
+    // Resolve hospital
+    let hospitalDoc = null;
+    if (validated.hospitalId) {
+      hospitalDoc = await Hospital.findById(validated.hospitalId);
+    }
+    if (!hospitalDoc) {
+      hospitalDoc = await hospitalRepository.ensureDefaultHospital();
+    }
+
+    // 1. Create and save Doctor record with Hospital & Schedule
     const doc = new Doctor({
       doctorId: doctorIdUpper,
       name: validated.name,
@@ -78,11 +119,19 @@ export async function POST(req: NextRequest) {
       specialization: validated.specialization,
       departmentId: validated.departmentId,
       departmentName: dept?.name || "General OPD",
+      hospitalId: hospitalDoc._id,
+      hospitalName: hospitalDoc.name,
       qualification: validated.qualification,
       experienceYears: validated.experienceYears,
       consultationFee: validated.consultationFee,
       opdRoomNo: validated.opdRoomNo,
       availableDays: validated.availableDays,
+      shiftHours: validated.shiftHours || {
+        morningSlot: "09:00 AM - 01:00 PM",
+        eveningSlot: "05:00 PM - 08:00 PM",
+      },
+      timeSlots: validated.timeSlots,
+      slotDurationMinutes: validated.slotDurationMinutes,
       status: validated.status,
     });
     await doc.save();

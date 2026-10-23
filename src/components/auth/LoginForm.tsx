@@ -228,24 +228,84 @@ export function LoginForm() {
               Create an account
             </Link>
           </div>
+
+          {/* Patient Quick Auto-Fill */}
+          <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#475569]">
+              <KeyRound className="w-3.5 h-3.5 text-[#0F766E]" />
+              <span>Demo Patient (Click to Auto-fill):</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleQuickFill("murugan@gmail.com", "Password123!")}
+              className="w-full text-xs font-medium py-1.5 px-3 bg-white hover:bg-slate-100 rounded-lg border border-[#CBD5E1] text-[#1E293B] transition-colors flex items-center justify-between"
+            >
+              <div className="flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-[#0F766E]" />
+                <span className="font-semibold">Murugan S</span>
+              </div>
+              <span className="text-slate-400 text-[11px]">murugan@gmail.com</span>
+            </button>
+          </div>
         </div>
       ) : (
         /* Staff Quick-Fill Demo Helpers */
-        <div className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-2">
+        <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#475569]">
             <KeyRound className="w-3.5 h-3.5 text-[#0F766E]" />
-            <span>Super Admin Account (Click to Auto-fill):</span>
+            <span>Staff Quick Auto-fill (Click to Select):</span>
           </div>
-          <div className="grid grid-cols-1">
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleQuickFill("gokul@gmail.com", "Password123!")}
+              className="text-xs font-medium py-1.5 px-2.5 bg-white hover:bg-emerald-50 rounded-lg border border-[#CBD5E1] hover:border-emerald-300 text-[#1E293B] transition-colors flex items-center justify-between"
+              title="Dr. Gokul (General Medicine)"
+            >
+              <div className="flex items-center gap-1">
+                <Stethoscope className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="font-semibold text-emerald-800">Dr. Gokul</span>
+              </div>
+              <span className="text-slate-400 text-[10px]">DOC-101</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickFill("anitha@gmail.com", "Password123!")}
+              className="text-xs font-medium py-1.5 px-2.5 bg-white hover:bg-sky-50 rounded-lg border border-[#CBD5E1] hover:border-sky-300 text-[#1E293B] transition-colors flex items-center justify-between"
+              title="Nurse Anitha (Triage)"
+            >
+              <div className="flex items-center gap-1">
+                <User className="w-3.5 h-3.5 text-sky-600" />
+                <span className="font-semibold text-sky-800">Nurse Anitha</span>
+              </div>
+              <span className="text-slate-400 text-[10px]">NUR-101</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickFill("ramesh@gmail.com", "Password123!")}
+              className="text-xs font-medium py-1.5 px-2.5 bg-white hover:bg-purple-50 rounded-lg border border-[#CBD5E1] hover:border-purple-300 text-[#1E293B] transition-colors flex items-center justify-between"
+              title="Receptionist Ramesh"
+            >
+              <div className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                <span className="font-semibold text-purple-800">Reception</span>
+              </div>
+              <span className="text-slate-400 text-[10px]">REC-101</span>
+            </button>
+
             <button
               type="button"
               onClick={() => handleQuickFill("admin@gmail.com", "Admin@123")}
-              className="text-xs font-medium py-2 px-3 bg-white hover:bg-slate-100 rounded-lg border border-[#CBD5E1] text-[#1E293B] transition-colors flex items-center justify-center gap-2"
-              title="Super Admin: admin@gmail.com"
+              className="text-xs font-medium py-1.5 px-2.5 bg-white hover:bg-slate-100 rounded-lg border border-[#CBD5E1] text-[#1E293B] transition-colors flex items-center justify-between"
+              title="Super Admin"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#0F766E]" />
-              <span>Super Admin</span>
-              <span className="text-slate-400 font-normal text-[11px]">(admin@gmail.com)</span>
+              <div className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#0F766E]" />
+                <span className="font-semibold">Super Admin</span>
+              </div>
+              <span className="text-slate-400 text-[10px]">Admin</span>
             </button>
           </div>
         </div>

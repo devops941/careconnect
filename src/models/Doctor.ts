@@ -8,6 +8,8 @@ export interface IDoctor extends Document {
   specialization: string;
   departmentId: mongoose.Types.ObjectId;
   departmentName?: string;
+  hospitalId?: mongoose.Types.ObjectId;
+  hospitalName?: string;
   gender?: "MALE" | "FEMALE" | "OTHER";
   medicalCouncilRegNo?: string;
   qualification: string;
@@ -15,7 +17,12 @@ export interface IDoctor extends Document {
   consultationFee: number;
   opdRoomNo: string;
   availableDays: string[];
+  shiftHours?: {
+    morningSlot?: string;
+    eveningSlot?: string;
+  };
   timeSlots: string[];
+  slotDurationMinutes?: number;
   status: "ACTIVE" | "ON_LEAVE" | "INACTIVE";
   createdAt: Date;
   updatedAt: Date;
@@ -63,6 +70,24 @@ const DoctorSchema = new Schema<IDoctor>(
     departmentName: {
       type: String,
       trim: true,
+    },
+    hospitalId: {
+      type: Schema.Types.ObjectId,
+      ref: "Hospital",
+      index: true,
+    },
+    hospitalName: {
+      type: String,
+      trim: true,
+      default: "CareConnect Main Hospital",
+    },
+    shiftHours: {
+      morningSlot: { type: String, default: "09:00 AM - 01:00 PM" },
+      eveningSlot: { type: String, default: "05:00 PM - 08:00 PM" },
+    },
+    slotDurationMinutes: {
+      type: Number,
+      default: 30,
     },
     gender: {
       type: String,

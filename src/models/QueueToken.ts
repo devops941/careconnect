@@ -15,6 +15,27 @@ export interface IQueueToken extends Document {
   opdRoomNo: string;
   priority: "NORMAL" | "EMERGENCY";
   status: "WAITING" | "CALLED" | "IN_CONSULTATION" | "COMPLETED" | "SKIPPED";
+  vitals?: {
+    heightCm?: number;
+    weightKg?: number;
+    bmi?: number;
+    bmiCategory?: string;
+    bpSystolic?: number;
+    bpDiastolic?: number;
+    bpFormatted?: string;
+    pulseBpm?: number;
+    tempFahrenheit?: number;
+    spo2Percent?: number;
+    respiratoryRate?: number;
+    rbsMgDl?: number;
+    allergies?: string;
+    chiefComplaints?: string;
+    nurseNotes?: string;
+    recordedByNurseId?: mongoose.Types.ObjectId;
+    recordedByNurseName?: string;
+    recordedAt?: Date;
+  };
+  vitalsStatus: "PENDING" | "RECORDED";
   calledAt?: Date;
   completedAt?: Date;
   createdAt: Date;
@@ -91,6 +112,32 @@ const QueueTokenSchema = new Schema<IQueueToken>(
       type: String,
       enum: ["WAITING", "CALLED", "IN_CONSULTATION", "COMPLETED", "SKIPPED"],
       default: "WAITING",
+      index: true,
+    },
+    vitals: {
+      heightCm: { type: Number },
+      weightKg: { type: Number },
+      bmi: { type: Number },
+      bmiCategory: { type: String, trim: true },
+      bpSystolic: { type: Number },
+      bpDiastolic: { type: Number },
+      bpFormatted: { type: String, trim: true },
+      pulseBpm: { type: Number },
+      tempFahrenheit: { type: Number },
+      spo2Percent: { type: Number },
+      respiratoryRate: { type: Number },
+      rbsMgDl: { type: Number },
+      allergies: { type: String, trim: true },
+      chiefComplaints: { type: String, trim: true },
+      nurseNotes: { type: String, trim: true },
+      recordedByNurseId: { type: Schema.Types.ObjectId, ref: "Employee" },
+      recordedByNurseName: { type: String, trim: true },
+      recordedAt: { type: Date },
+    },
+    vitalsStatus: {
+      type: String,
+      enum: ["PENDING", "RECORDED"],
+      default: "PENDING",
       index: true,
     },
     calledAt: {

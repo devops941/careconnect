@@ -8,7 +8,7 @@ export interface CreateEmployeeDto {
   email: string;
   normalizedEmail: string;
   passwordHash: string;
-  role: "DOCTOR" | "RECEPTIONIST" | "ADMIN";
+  role: "DOCTOR" | "RECEPTIONIST" | "NURSE" | "ADMIN";
   department: string;
   phone?: string;
   status?: AccountStatus;

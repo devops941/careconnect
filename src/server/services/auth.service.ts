@@ -229,7 +229,7 @@ export class AuthService {
       employeeId: string;
       name: string;
       email: string;
-      role: "DOCTOR" | "RECEPTIONIST" | "ADMIN";
+      role: "DOCTOR" | "RECEPTIONIST" | "NURSE" | "ADMIN";
       department: string;
       password: string;
       phone?: string;

@@ -7,7 +7,7 @@ export interface IEmployee extends Document {
   email: string;
   normalizedEmail: string;
   passwordHash: string;
-  role: "DOCTOR" | "RECEPTIONIST" | "ADMIN";
+  role: "DOCTOR" | "RECEPTIONIST" | "NURSE" | "ADMIN";
   department: string;
   phone?: string;
   status: AccountStatus;
@@ -55,7 +55,7 @@ const EmployeeSchema = new Schema<IEmployee>(
     },
     role: {
       type: String,
-      enum: ["DOCTOR", "RECEPTIONIST", "ADMIN"],
+      enum: ["DOCTOR", "RECEPTIONIST", "NURSE", "ADMIN"],
       required: true,
       index: true,
     },

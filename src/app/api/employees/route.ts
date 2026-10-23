@@ -10,7 +10,7 @@ const createEmployeeSchema = z.object({
   employeeId: z.string().trim().min(3, "Employee ID must be at least 3 characters").max(20),
   name: z.string().trim().min(2, "Full name is required").max(100),
   email: z.string().trim().email("Please provide a valid work email"),
-  role: z.enum(["DOCTOR", "RECEPTIONIST", "ADMIN"]),
+  role: z.enum(["DOCTOR", "RECEPTIONIST", "NURSE", "ADMIN"]),
   department: z.string().trim().min(2, "Department is required"),
   password: passwordComplexitySchema,
   phone: z.string().optional(),

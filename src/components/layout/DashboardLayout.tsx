@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
 import { ProfilePreferencesModal } from "../profile/ProfilePreferencesModal";
+import { HospitalSwitcher } from "../hospital/HospitalSwitcher";
 
 export interface NavItem {
   id: string;
@@ -408,8 +409,11 @@ export function DashboardLayout({
             </h1>
           </div>
 
-          {/* Right: User Profile */}
-          <div className="flex items-center gap-2.5">
+          {/* Center/Right: Hospital Switcher & User Profile */}
+          <div className="flex items-center gap-3">
+            <HospitalSwitcher />
+            
+            <div className="h-5 w-[1px] bg-[#E2E8F0] hidden sm:block" />
             <div className="w-8 h-8 rounded-full bg-[#16324F] text-white flex items-center justify-center text-xs font-bold shadow-xs">
               {user.name.charAt(0)}
             </div>

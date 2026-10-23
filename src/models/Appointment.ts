@@ -6,6 +6,8 @@ export interface IAppointment extends Document {
   patientName: string;
   patientPhone?: string;
   patientEmail?: string;
+  hospitalId?: mongoose.Types.ObjectId;
+  hospitalName?: string;
   doctorId: mongoose.Types.ObjectId;
   doctorName: string;
   departmentId: mongoose.Types.ObjectId;
@@ -55,6 +57,15 @@ const AppointmentSchema = new Schema<IAppointment>(
       trim: true,
     },
     patientEmail: {
+      type: String,
+      trim: true,
+    },
+    hospitalId: {
+      type: Schema.Types.ObjectId,
+      ref: "Hospital",
+      index: true,
+    },
+    hospitalName: {
       type: String,
       trim: true,
     },

@@ -24,6 +24,11 @@ export interface IPrescription extends Document {
     pulse?: string;
     temp?: string;
     weight?: string;
+    height?: string;
+    bmi?: string;
+    spo2?: string;
+    rbs?: string;
+    allergies?: string;
   };
   medications: IMedicationItem[];
   labInvestigations?: string[];
@@ -101,6 +106,11 @@ const PrescriptionSchema = new Schema<IPrescription>(
       pulse: { type: String, trim: true },
       temp: { type: String, trim: true },
       weight: { type: String, trim: true },
+      height: { type: String, trim: true },
+      bmi: { type: String, trim: true },
+      spo2: { type: String, trim: true },
+      rbs: { type: String, trim: true },
+      allergies: { type: String, trim: true },
     },
     medications: [MedicationItemSchema],
     labInvestigations: [{ type: String, trim: true }],

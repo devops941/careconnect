@@ -35,6 +35,11 @@ const createPrescriptionSchema = z.object({
       pulse: z.string().optional(),
       temp: z.string().optional(),
       weight: z.string().optional(),
+      height: z.string().optional(),
+      bmi: z.string().optional(),
+      spo2: z.string().optional(),
+      rbs: z.string().optional(),
+      allergies: z.string().optional(),
     })
     .optional(),
   medications: z.array(medicationSchema).default([]),

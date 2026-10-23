@@ -130,57 +130,72 @@ sequenceDiagram
 
 ## 3. Master Login Credentials Table
 
-All credentials below are pre-configured, verified, and ready for immediate testing.
+All credentials below are active in MongoDB and ready for immediate testing.
+> 🔑 **Unified Password**: For all Doctors, Nurses, Receptionists, and Patients, the password is **`Password123!`**.
+> 🛡️ **Super Admin Password**: **`Admin@123`**.
+> 💡 **Login Identifier**: Staff can log in using either their **Email** or their **Employee ID** (e.g. `gokul@gmail.com` or `DOC-101`).
+
+---
 
 ### 🛡️ 3.1 Super Administrator Account
-| Name | Role | Email | Employee ID | Password | Target Dashboard |
+| Name | Role | Email | Password | Access Scope | Target Dashboard |
 |---|---|---|---|---|---|
-| Chief System Administrator | `SUPER_ADMIN` | `admin@gmail.com` | `N/A` | `Admin@123` | `/staff/dashboard` |
-
-*Note: You can also use the one-click "Super Admin" auto-fill button directly on the `/login` page under the "Hospital Staff" tab.*
+| System Administrator | `SUPER_ADMIN` | `admin@gmail.com` | `Admin@123` | Entire Hospital Network | `/staff/dashboard` |
 
 ---
 
-### 🏥 3.2 Hospital Administration (Admins)
-| Name | Role | Email | Employee ID | Password | Department | Target Dashboard |
+### 🏥 3.2 Hospital 1: CareConnect City Hospital (Chennai - `CC-CITY`)
+
+#### 👨‍⚕️ Doctors (3 Doctors)
+| Doctor Name | Specialization / Dept | Email | Doctor ID | Password | OPD Room | Status |
 |---|---|---|---|---|---|---|
-| Suresh Krishnan | `ADMIN` | `suresh.admin@careconnect.health` | `EMP-ADM-01` | `Password123!` | Administration | `/staff/dashboard` |
-| Priya Ramanathan | `ADMIN` | `priya.ops@careconnect.health` | `EMP-ADM-02` | `Password123!` | Operations | `/staff/dashboard` |
+| **Dr. Gokul R** | General Medicine | `gokul@gmail.com` | `DOC-101` | `Password123!` | Room 101 | Active |
+| **Dr. Priya Annamalai** | Cardiology | `priya@gmail.com` | `DOC-102` | `Password123!` | Room 102 | Active |
+| **Dr. Rajesh Kumar** | Pediatrics & Child Health | `rajesh@gmail.com` | `DOC-103` | `Password123!` | Room 103 | Active |
 
----
-
-### 🩺 3.3 Specialist Doctors (5 Clinical Departments)
-*You can log in using either the **Email Address** OR the **Employee / Doctor ID** with the same password.*
-
-| Doctor Name | Department | Specialization | Email | Doctor ID | Password | OPD Room |
+#### 👩‍⚕️ Nurses (2 Nurses)
+| Nurse Name | Role | Department / Station | Email | Staff ID | Password | Target Dashboard |
 |---|---|---|---|---|---|---|
-| **Dr. Sarah Jenkins** | Cardiology | Interventional Cardiologist | `sarah.jenkins@careconnect.health` | `DOC-2026-001` | `Password123!` | Room 201 |
-| **Dr. Rajesh Sundaram** | Neurology | Senior Neurologist | `rajesh.sundaram@careconnect.health` | `DOC-2026-002` | `Password123!` | Room 302 |
-| **Dr. Vikram Sethi** | Orthopedics | Orthopedic Surgeon | `vikram.sethi@careconnect.health` | `DOC-2026-003` | `Password123!` | Room 105 |
-| **Dr. Ananya Natarajan** | Pediatrics | Senior Pediatrician | `ananya.natarajan@careconnect.health` | `DOC-2026-004` | `Password123!` | Room 102 |
-| **Dr. Arvind Swaminathan** | General Medicine | Chief Consultant Physician | `arvind.swaminathan@careconnect.health` | `DOC-2026-005` | `Password123!` | Room 101 |
+| **Sister Anitha V, RN** | `NURSE` | OPD Triage / Vitals Station | `anitha@gmail.com` | `NUR-101` | `Password123!` | `/staff/dashboard` |
+| **Sister Deepa M, RN** | `NURSE` | Emergency & Vitals Intake | `deepa@gmail.com` | `NUR-102` | `Password123!` | `/staff/dashboard` |
 
----
-
-### 📋 3.4 Front Desk & Reception Staff
-| Name | Role | Email | Employee ID | Password | Operational Desk | Target Dashboard |
+#### 💼 Receptionist (1 Receptionist)
+| Name | Role | Department | Email | Staff ID | Password | Target Dashboard |
 |---|---|---|---|---|---|---|
-| Kavitha Murugan | `RECEPTIONIST` | `kavitha.reception@careconnect.health` | `EMP-REC-01` | `Password123!` | Front Desk & Triage | `/staff/dashboard` |
-| Vignesh Balaji | `RECEPTIONIST` | `vignesh.triage@careconnect.health` | `EMP-REC-02` | `Password123!` | Emergency Triage Desk | `/staff/dashboard` |
-| Deepa Senthil | `RECEPTIONIST` | `deepa.billing@careconnect.health` | `EMP-REC-03` | `Password123!` | Billing & Cashier Desk | `/staff/dashboard` |
+| **Ramesh Kannan** | `RECEPTIONIST` | Central Registration & Front Desk | `ramesh@gmail.com` | `REC-101` | `Password123!` | `/staff/dashboard` |
 
 ---
 
-### 👤 3.5 Registered Patient Accounts
-| Patient Name | Blood Group | Gender | Registered Email | Password | Target Dashboard |
-|---|---|---|---|---|---|
-| Arunachalam Pillai | A+ | Male | `arunachalam@example.com` | `Password123!` | `/patient/dashboard` |
-| Sneha Sundar | O+ | Female | `sneha.sundar@example.com` | `Password123!` | `/patient/dashboard` |
-| Ramesh Kumar | B+ | Male | `ramesh.kumar@example.com` | `Password123!` | `/patient/dashboard` |
-| Meenakshi Venkat | AB+ | Female | `meenakshi.v@example.com` | `Password123!` | `/patient/dashboard` |
-| Karthik Subramaniam | O- | Male | `karthik.subbu@example.com` | `Password123!` | `/patient/dashboard` |
+### 🏥 3.3 Hospital 2: CareConnect Metro Health Center (Coimbatore - `CC-METRO`)
 
-> 💡 **Google OAuth Alternative**: Patients can also click **"Continue with Google"** on `/login` or `/register` to instantly authenticate with their Google account.
+#### 👨‍⚕️ Doctors (3 Doctors)
+| Doctor Name | Specialization / Dept | Email | Doctor ID | Password | OPD Room | Status |
+|---|---|---|---|---|---|---|
+| **Dr. Suresh Verma** | Orthopedics & Joint Care | `suresh@gmail.com` | `DOC-201` | `Password123!` | Room 201 | Active |
+| **Dr. Meena Krishnan** | Cardiology | `meena@gmail.com` | `DOC-202` | `Password123!` | Room 202 | Active |
+| **Dr. Arun Prakash** | General Medicine | `arun@gmail.com` | `DOC-203` | `Password123!` | Room 203 | Active |
+
+#### 👩‍⚕️ Nurses (2 Nurses)
+| Nurse Name | Role | Department / Station | Email | Staff ID | Password | Target Dashboard |
+|---|---|---|---|---|---|---|
+| **Sister Saranya T, RN** | `NURSE` | General Ward & Triage | `saranya@gmail.com` | `NUR-201` | `Password123!` | `/staff/dashboard` |
+| **Sister Kavya R, RN** | `NURSE` | OPD Triage Station 2 | `kavya@gmail.com` | `NUR-202` | `Password123!` | `/staff/dashboard` |
+
+#### 💼 Receptionist (1 Receptionist)
+| Name | Role | Department | Email | Staff ID | Password | Target Dashboard |
+|---|---|---|---|---|---|---|
+| **Karthik Pandian** | `RECEPTIONIST` | Front Desk & Patient Services | `karthik@gmail.com` | `REC-201` | `Password123!` | `/staff/dashboard` |
+
+---
+
+### 🧑 3.4 Registered Patient Accounts (5 Patients)
+| Patient Name | Email | Password | Age / Gender | Blood Group | Live OPD / Consultation Status | Target Dashboard |
+|---|---|---|---|---|---|---|
+| **Murugan Swaminathan** | `murugan@gmail.com` | `Password123!` | 48, Male | B+ | Token `GMED-101` (Vitals Pending for Nurse) | `/patient/dashboard` |
+| **Kavitha Rajendran** | `kavitha@gmail.com` | `Password123!` | 35, Female | O+ | Token `CARD-102` (Vitals Recorded for Dr. Priya) | `/patient/dashboard` |
+| **Vignesh Manoharan** | `vignesh@gmail.com` | `Password123!` | 28, Male | A+ | Token `PEDI-103` (Dr. Rajesh Kumar) | `/patient/dashboard` |
+| **Divya Sundaram** | `divya@gmail.com` | `Password123!` | 24, Female | AB+ | Appointment `APT-2026-202` (Hospital 2) | `/patient/dashboard` |
+| **Selvam Palanisamy** | `selvam@gmail.com` | `Password123!` | 56, Male | O- | Token `ORTHO-201` (Hospital 2 - Ortho) | `/patient/dashboard` |
 
 ---
 
